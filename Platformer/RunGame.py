@@ -43,6 +43,7 @@ background_color = (100, 100, 100)
 time = 0
 sprite_pos = [50, 50]
 
+animation = sprites['Centiman']['walk']
 
 def ProcessPygameEvents(key_state):
 
@@ -106,7 +107,7 @@ while True:  # game loop
 
     display.fill(background_color)  # clear screen by filling it with blue
 
-    display.blit(sprites['Centiman']['walk'][int(time / 10) % len(sprites['Centiman']['walk'].keys())], sprite_pos)
+    display.blit(animation[int(time / 10) % len(animation.keys())], sprite_pos)
 
     screen.blit(pygame.transform.scale(display, WINDOW_SIZE), (0, 0))
 
