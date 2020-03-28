@@ -23,3 +23,8 @@
 		- Walls
 		- Etc.
 	- Jumping
+
+- Sound Design
+    - Music
+    - Character sounds
+    
