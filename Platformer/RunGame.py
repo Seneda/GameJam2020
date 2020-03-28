@@ -1,14 +1,11 @@
 import os
 import sys
-from pprint import pprint
 from random import random
 
 import pygame
 import pygame.locals
 
 from Character import Character
-
-from Platformer.Sprites import SPRITES_DIR
 
 pygame.init()
 WINDOW_SIZE = (600, 400)
@@ -76,8 +73,8 @@ def UpdateBackgroundColour(background_color):
     return (r, g, b)
 
 
-MAPS_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "maps")
-TILES_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "tiles")
+MAPS_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Resources", "maps")
+TILES_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Resources", "tiles")
 
 tile_dict = {
            "0": None,
