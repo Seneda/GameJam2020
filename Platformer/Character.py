@@ -4,7 +4,7 @@ import pygame
 SPRITES_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "sprites")
 
 class Character():
-    def __init__(self,screen,name):
+    def __init__(self,screen,name,pos):
         """Initialise the monkey and set its starting position"""
         self.screen = screen
         self.name = name
@@ -22,7 +22,7 @@ class Character():
         # self.rect.centery = 0
 
         self.speed = [0,0] # speed in x,y notation (right and up)
-        self.pos = [50,50]
+        self.pos = pos
 
     def LoadSprites(self):
         print("Loading Sprites...")
@@ -46,21 +46,25 @@ class Character():
         print(sprites)
         return sprites
 
-    def updatePos(self,key_state,time_passed_ms):
-        acceleration = 1
-        jump_speed = 20
+    def updatePos(self,key_state,time_passed_ms,floor):
+        acceleration = 0.1
+        jump_speed = 1
         gravity = 10
 
         if key_state['Right']:
             self.speed[0] += (acceleration)*(time_passed_ms)
         if key_state['Left']:
             self.speed[0] -= (acceleration)*(time_passed_ms)
-        # if key_state['Down']:
-     #      self.speed[1] += (acceleration)*(time_passed_ms)
+        if key_state['Down']:
+          self.speed[1] += (acceleration)*(time_passed_ms)
         if key_state['Up']:
             self.speed[1] = -jump_speed
 
-        self.speed[1] += gravity*time_passed_ms
+        # floor_group = [floor]
+        # if pygame.sprite.spritecollideany(self, floor_group)
+        #     self.speed[1] = 0
+
+        # self.speed[1] += gravity*time_passed_ms
         self.pos[0] = self.pos[0] + self.speed[0]
         self.pos[1] = self.pos[1] + self.speed[1]
         print(self.pos)

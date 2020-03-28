@@ -99,24 +99,36 @@ def UpdateBackgroundColour(background_color):
     return (r, g, b)
 
 
-Finley = Character(screen,'Finley')
+Finley = Character(screen,'Finley',[50,100])
+Scuttle = Character(screen,'Scuttlefish',[70,100])
+
+# Loading in floor
+# floor = pygame.Rect(300,10,100,100)
+floor = pygame.Rect(0,150,600,10)
 
 while True:  # game loop
     time += 1
     key_state = ProcessPygameEvents(key_state)
 
     # sprite_pos = UpdatePosition(sprite_pos)
-    Finley.updatePos(key_state, 1)
+    Finley.updatePos(key_state,1,floor)
+    Scuttle.updatePos(key_state,1,floor)
 
     background_color = UpdateBackgroundColour(background_color)
+    
 
     display.fill(background_color)  # clear screen by filling it with blue
 
+
     # display.blit(sprites['Finley']['walk'][int(time / 10) % len(sprites['Finley']['walk'].keys())], sprite_pos)
     Finley.updateDraw(display)
+    Scuttle.updateDraw(display)
+    pygame.draw.rect(display, (0, 255, 0), floor)
+
     # display.blit(animation[int(time / 10) % len(animation.keys())], Finley.pos)
 
     screen.blit(pygame.transform.scale(display, WINDOW_SIZE), (0, 0))
+    
 
     pygame.display.update()
     clock.tick(60)
