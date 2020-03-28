@@ -6,6 +6,8 @@ from random import random
 import pygame
 import pygame.locals
 
+from Character import Character
+
 pygame.init()
 WINDOW_SIZE = (600, 400)
 SPRITES_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "sprites")
@@ -96,17 +98,21 @@ def UpdateBackgroundColour(background_color):
     return (r, g, b)
 
 
+Finley = Character(screen,'Finley')
+
 while True:  # game loop
     time += 1
     key_state = ProcessPygameEvents(key_state)
 
-    sprite_pos = UpdatePosition(sprite_pos)
+    # sprite_pos = UpdatePosition(sprite_pos)
+    Finley.updatePos(key_state,1)
 
     background_color = UpdateBackgroundColour(background_color)
 
     display.fill(background_color)  # clear screen by filling it with blue
 
-    display.blit(sprites['Centiman']['walk'][int(time / 10) % len(sprites['Centiman']['walk'].keys())], sprite_pos)
+    # display.blit(sprites['Finley']['walk'][int(time / 10) % len(sprites['Finley']['walk'].keys())], sprite_pos)
+    Finley.updateDraw(display)
 
     screen.blit(pygame.transform.scale(display, WINDOW_SIZE), (0, 0))
 
