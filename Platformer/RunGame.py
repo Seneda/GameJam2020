@@ -8,48 +8,24 @@ import pygame.locals
 
 from Character import Character
 
+from Platformer.Sprites import SPRITES_DIR
+
 pygame.init()
 WINDOW_SIZE = (600, 400)
-SPRITES_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "sprites")
 
 screen = pygame.display.set_mode(WINDOW_SIZE, 0, 32)  # initiate the window
 display = pygame.Surface((300, 200))
 clock = pygame.time.Clock()
 
-
-def LoadSprites():
-    print("Loading Sprites...")
-    sprites = {}
-    for _, sprite_dirs, _ in os.walk(SPRITES_DIR):
-        for sprite_name in sprite_dirs:
-            print("Loading {}".format(sprite_name))
-            sprites.setdefault(sprite_name, {})
-            for _, _, animation_files in os.walk(os.path.join(SPRITES_DIR, sprite_name)):
-                for animation_name in animation_files:
-                    try:
-                        print("Loading {}".format(animation_name))
-                        print(animation_name)
-                        animation_type = animation_name.split('_')[0]
-                        animation_num = animation_name.split('_')[1].replace('.png', '')
-                        sprites[sprite_name].setdefault(animation_type, {})[int(animation_num)] = pygame.image.load(
-                            os.path.join(SPRITES_DIR, sprite_name, animation_name))
-                    except:
-                        print("Couldn't load {}".format(animation_name))
-    pprint(sprites)
-    return sprites
-
-sprites = LoadSprites()
 key_state = {"Up": False, "Down": False, "Left": False, "Right": False}
 
 background_color = (100, 100, 100)
 time = 0
 sprite_pos = [50, 50]
 
-animation = sprites['Centiman']['walk']
 
 def ProcessPygameEvents(key_state):
-
-    for event in pygame.event.get(): # event loop
+    for event in pygame.event.get():  # event loop
         if event.type == pygame.locals.QUIT:
             pygame.quit()
             sys.exit()
@@ -73,17 +49,18 @@ def ProcessPygameEvents(key_state):
                 key_state["Right"] = False
     return key_state
 
-def UpdatePosition(sprite_pos):
-    speed = 1
-    if key_state['Right']:
-        sprite_pos[0] += speed
-    if key_state['Left']:
-        sprite_pos[0] -= speed
-    if key_state['Down']:
-        sprite_pos[1] += speed
-    if key_state['Up']:
-        sprite_pos[1] -= speed
-    return sprite_pos
+
+# def UpdatePosition(sprite_pos):
+#     speed = 1
+#     if key_state['Right']:
+#         sprite_pos[0] += speed
+#     if key_state['Left']:
+#         sprite_pos[0] -= speed
+#     if key_state['Down']:
+#         sprite_pos[1] += speed
+#     if key_state['Up']:
+#         sprite_pos[1] -= speed
+#     return sprite_pos
 
 def UpdateBackgroundColour(background_color):
     r, g, b = background_color
@@ -99,36 +76,68 @@ def UpdateBackgroundColour(background_color):
     return (r, g, b)
 
 
-Finley = Character(screen,'Finley',[50,100])
-Scuttle = Character(screen,'Scuttlefish',[70,100])
+MAPS_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "maps")
+TILES_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "tiles")
+
+tile_dict = {
+           "0": None,
+           "1": pygame.image.load(os.path.join(TILES_DIR, "groundtop.png")),
+           "2": pygame.image.load(os.path.join(TILES_DIR, "wall.png")),
+           "3": pygame.image.load(os.path.join(TILES_DIR, "ground.png"))
+           }
+
+def LoadTileMap(map_filename, tile_dict):
+    tiles = []
+    with open(os.path.join(MAPS_DIR, map_filename)) as f:
+        mapdef = [[i for i in line.strip()] for line in f.readlines()]
+    for y in range(0, len(mapdef)):
+        row = mapdef[y]
+        tiles.append([])
+        for x in range(0, len(row)):
+            tiles[y].append(tile_dict.get(mapdef[y][x], None))
+    return tiles
+
+Map = LoadTileMap("test_map.txt", tile_dict)
+
+Finley = Character(screen, 'Finley', [50, 100])
+Scuttle = Character(screen, 'Scuttlefish', [70, 100])
 
 # Loading in floor
 # floor = pygame.Rect(300,10,100,100)
-floor = pygame.Rect(0,150,600,10)
+
+def DrawMap(display, tilemap):
+    rects = []
+    for y in range(0, len(tilemap)):
+        for x in range(0, len(tilemap[y])):
+            tile = tilemap[y][x]
+            if tile is not None:
+                display.blit(tile, (x*16, y*16, 16, 16))
+                rects.append(pygame.Rect(x*16, y*16, 16, 16))
+    return rects
 
 while True:  # game loop
     time += 1
     key_state = ProcessPygameEvents(key_state)
+    display.fill(background_color)  # clear screen by filling it with blue
 
+    map_rects = DrawMap(display, Map)
     # sprite_pos = UpdatePosition(sprite_pos)
-    Finley.updatePos(key_state,1,floor)
-    Scuttle.updatePos(key_state,1,floor)
+    Finley.updatePos(key_state, 1, map_rects)
+    Scuttle.updatePos(key_state, 1, map_rects)
 
     background_color = UpdateBackgroundColour(background_color)
-    
-
-    display.fill(background_color)  # clear screen by filling it with blue
 
 
     # display.blit(sprites['Finley']['walk'][int(time / 10) % len(sprites['Finley']['walk'].keys())], sprite_pos)
+
+
     Finley.updateDraw(display)
     Scuttle.updateDraw(display)
-    pygame.draw.rect(display, (0, 255, 0), floor)
+
 
     # display.blit(animation[int(time / 10) % len(animation.keys())], Finley.pos)
 
     screen.blit(pygame.transform.scale(display, WINDOW_SIZE), (0, 0))
-    
 
     pygame.display.update()
     clock.tick(60)
