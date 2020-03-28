@@ -1,13 +1,14 @@
 import os
 import pygame
 
+SPRITES_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "sprites")
+
 class Character():
     def __init__(self,screen,name):
         """Initialise the monkey and set its starting position"""
         self.screen = screen
         self.name = name
 
-        self.SPRITES_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "sprites")
         self.sprites = self.LoadSprites()
 
         #Load image and get its rect.
@@ -26,11 +27,11 @@ class Character():
     def LoadSprites(self):
         print("Loading Sprites...")
         sprites = {}
-        for _, sprite_dirs, _ in os.walk(self.SPRITES_DIR):
+        for _, sprite_dirs, _ in os.walk(SPRITES_DIR):
             for sprite_name in sprite_dirs:
                 print("Loading {}".format(sprite_name))
                 sprites.setdefault(sprite_name, {})
-                for _, _, animation_files in os.walk(os.path.join(self.SPRITES_DIR, sprite_name)):
+                for _, _, animation_files in os.walk(os.path.join(SPRITES_DIR, sprite_name)):
                     for animation_name in animation_files:
                         try:
                             print("Loading {}".format(animation_name))
@@ -39,8 +40,9 @@ class Character():
                             animation_num = animation_name.split('_')[1].replace('.png', '')
                             sprites[sprite_name].setdefault(animation_type, {})[int(animation_num)] = pygame.image.load(
                                 os.path.join(SPRITES_DIR, sprite_name, animation_name))
-                        except:
+                        except Exception as e:
                             print("Couldn't load {}".format(animation_name))
+                            print(e)
         print(sprites)
         return sprites
 
@@ -56,12 +58,13 @@ class Character():
         # if key_state['Down']:
      #      self.speed[1] += (acceleration)*(time_passed_ms)
         if key_state['Up']:
-            self.speed[1] = -jumpSpeed 
+            self.speed[1] = -jump_speed
 
         self.speed[1] += gravity*time_passed_ms
-
-        # return sprite_pos
+        self.pos[0] = self.pos[0] + self.speed[0]
+        self.pos[1] = self.pos[1] + self.speed[1]
+        print(self.pos)
 
     def updateDraw(self,display):
-        display.blit(self.sprites[self.name]['walk'][int(time / 10) % len(self.sprites[self.name]['walk'].keys())], self.pos)
+        display.blit(self.sprites[self.name]['walk'][0], self.pos)
 

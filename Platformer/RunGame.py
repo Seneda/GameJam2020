@@ -106,15 +106,15 @@ while True:  # game loop
     key_state = ProcessPygameEvents(key_state)
 
     # sprite_pos = UpdatePosition(sprite_pos)
-    Finley.updatePos(key_state,1)
+    Finley.updatePos(key_state, 1)
 
     background_color = UpdateBackgroundColour(background_color)
 
     display.fill(background_color)  # clear screen by filling it with blue
 
     # display.blit(sprites['Finley']['walk'][int(time / 10) % len(sprites['Finley']['walk'].keys())], sprite_pos)
-    # Finley.updateDraw(display)
-    display.blit(animation[int(time / 10) % len(animation.keys())], sprite_pos)
+    Finley.updateDraw(display)
+    # display.blit(animation[int(time / 10) % len(animation.keys())], Finley.pos)
 
     screen.blit(pygame.transform.scale(display, WINDOW_SIZE), (0, 0))
 
