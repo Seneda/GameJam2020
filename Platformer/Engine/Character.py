@@ -1,6 +1,6 @@
 import pygame
 
-from Platformer.Engine.Sprites import sprites
+from Engine.Sprites import sprites
 
 
 class Character():

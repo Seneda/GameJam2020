@@ -5,10 +5,10 @@ from random import random
 import pygame
 import pygame.locals
 
-from Character import Character
+from Engine.Character import Character
 
 pygame.init()
-WINDOW_SIZE = (600, 400)
+WINDOW_SIZE = (1200, 800)
 
 screen = pygame.display.set_mode(WINDOW_SIZE, 0, 32)  # initiate the window
 display = pygame.Surface((300, 200))
