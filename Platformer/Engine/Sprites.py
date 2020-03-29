@@ -18,8 +18,10 @@ def LoadSprites():
                         print(animation_name)
                         animation_type = animation_name.split('_')[0]
                         animation_num = animation_name.split('_')[1].replace('.png', '')
-                        sprites[sprite_name].setdefault(animation_type, {})[int(animation_num)] = pygame.image.load(
+                        sprites[sprite_name].setdefault(animation_type+'_right', {})[int(animation_num)] = pygame.image.load(
                             os.path.join(SPRITES_DIR, sprite_name, animation_name))
+                        sprites[sprite_name].setdefault(animation_type+'_left', {})[int(animation_num)] = pygame.transform.flip(pygame.image.load(
+                            os.path.join(SPRITES_DIR, sprite_name, animation_name)), True, False)
                     except Exception as e:
                         print("Couldn't load {}".format(animation_name))
                         print(e)
