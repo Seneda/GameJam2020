@@ -25,9 +25,9 @@ class Character():
         self.rect = pygame.Rect(*pos, 32, 32)
         self.collision_rect = pygame.Rect(*pos, 24, 32)
         self.jump_timer = 1000
-        self.run_speed = 2
+        self.run_speed = 5
         self.jump_acceleration = 100
-        self.gravity = 0.5 * 9.81 * 16 # 16 pixels = 1m
+        self.gravity = 0.25 * 9.81 * 16 # 16 pixels = 1m
 
 
         self.animation_timer = 0
@@ -60,12 +60,12 @@ class Character():
             self.speed[0] -= self.run_speed
         if key_state['Up']:
             # limits how long you can hold jump for and keep accelerating upwards, but allows you to do a small jump by tapping and hold for up to 0.2s for a longer jump
-            if (self.jump_timer > 0.5) or (self.jump_timer < 0.2):
+            if (self.jump_timer > 0.5) or (self.jump_timer < 0.1):
                 self.speed[1] -= self.jump_acceleration * time_passed_s
                 if self.jump_timer > 0.5:
                     self.jump_timer = 0
 
-        MAXSPEED = 20
+        MAXSPEED = 15
 
         self.speed[0] = min(MAXSPEED, max(-MAXSPEED, self.speed[0]))
         self.speed[1] = min(MAXSPEED, max(-MAXSPEED, self.speed[1]))
@@ -81,6 +81,7 @@ class Character():
             self.x = self.x + self.speed[0]
             self.detect_collisions(collision_objects)
 
+        last_animation = self.animation_type
 
         if self.speed[0] > 0:
             self.animation_type = "walk_right"
@@ -100,6 +101,9 @@ class Character():
             else:
                 self.animation_type = 'jump_right'
 
+        if self.animation_type != last_animation:
+            self.animation_timer = 0
+
     def detect_collisions(self, collision_objects):
     #     self.collision_rect = self.rect.copy()
     #     self.collision_rect.width = 24
@@ -107,7 +111,9 @@ class Character():
     #     self.collision_rect.center = self.rect.center
         self.collisions = sorted([r for r in collision_objects if self.collision_rect.colliderect(r)],
                                  key=lambda x: math.hypot(x.centerx - self.collision_rect.centerx, x.centery - self.collision_rect.centery))
+        collision_counter = 0
         while self.collisions:
+            collision_counter += 1
             for collision in self.collisions:
 
                 if self.collision_rect.centery < collision.top:
@@ -149,7 +155,12 @@ class Character():
                 #                              key=lambda x: math.hypot(x.centerx - self.collision_rect.centerx,
                 #                                                       x.centery - self.collision_rect.centery))
 
+                print("Collision Iteration : {}".format(collision_counter))
+                break
+
     def updateDraw(self, display, minimap, scroll):
+        display.blit(pygame.font.SysFont('Arial', 10).render('{:.1f}'.format(math.hypot(*self.speed)), True, (0, 0, 0)),
+                     (self.rect.x - scroll[0], self.rect.y-scroll[1] - 10))
         display.blit(sprites[self.name][self.animation_type][int(self.animation_timer*8)%len(sprites[self.name][self.animation_type])], (self.x - scroll[0], self.y - scroll[1]))
         if self.collisions:
             pygame.draw.rect(minimap, (255,0,0), self.rect)
