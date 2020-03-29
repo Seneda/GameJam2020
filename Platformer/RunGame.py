@@ -1,23 +1,34 @@
 import os
 import sys
 from random import random
+import time
 
 import pygame
 import pygame.locals
+import pygame.sprite
 
 from Engine.Character import Character
+from Engine.Map import LoadTileMap, tile_dict
 
 pygame.init()
 WINDOW_SIZE = (1200, 800)
+WINDOW_PIXELS = (300, 200)
+
+Map = LoadTileMap("test_map.txt", tile_dict)
+
+MAP_SIZE = (16*len(Map[0]), 16*len(Map))
+
+BG_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Resources", "background")
+
 
 screen = pygame.display.set_mode(WINDOW_SIZE, 0, 32)  # initiate the window
-display = pygame.Surface((300, 200))
+display = pygame.Surface(WINDOW_PIXELS)
+minimap = pygame.Surface(MAP_SIZE)
 clock = pygame.time.Clock()
 
 key_state = {"Up": False, "Down": False, "Left": False, "Right": False}
 
 background_color = (100, 100, 100)
-time = 0
 sprite_pos = [50, 50]
 
 
@@ -73,68 +84,73 @@ def UpdateBackgroundColour(background_color):
     return (r, g, b)
 
 
-MAPS_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Resources", "maps")
-TILES_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Resources", "tiles")
 
-tile_dict = {
-           "0": None,
-           "1": pygame.image.load(os.path.join(TILES_DIR, "groundtop.png")),
-           "2": pygame.image.load(os.path.join(TILES_DIR, "wall.png")),
-           "3": pygame.image.load(os.path.join(TILES_DIR, "ground.png"))
-           }
 
-def LoadTileMap(map_filename, tile_dict):
-    tiles = []
-    with open(os.path.join(MAPS_DIR, map_filename)) as f:
-        mapdef = [[i for i in line.strip()] for line in f.readlines()]
-    for y in range(0, len(mapdef)):
-        row = mapdef[y]
-        tiles.append([])
-        for x in range(0, len(row)):
-            tiles[y].append(tile_dict.get(mapdef[y][x], None))
-    return tiles
 
-Map = LoadTileMap("test_map.txt", tile_dict)
 
-Finley = Character(screen, 'Finley', [50, 100])
+
+Treeman = Character(screen, 'Treeman', [20, 80])
 Scuttle = Character(screen, 'Scuttlefish', [70, 100])
 
 # Loading in floor
 # floor = pygame.Rect(300,10,100,100)
 
-def DrawMap(display, tilemap):
+def DrawMap(display, minimap, tilemap, scroll):
     rects = []
     for y in range(0, len(tilemap)):
         for x in range(0, len(tilemap[y])):
             tile = tilemap[y][x]
             if tile is not None:
-                display.blit(tile, (x*16, y*16, 16, 16))
+                display.blit(tile, (x*16-scroll[0], y*16-scroll[1], 16, 16))
                 rects.append(pygame.Rect(x*16, y*16, 16, 16))
+                pygame.draw.rect(minimap, (255, 0, 0), rects[-1], 1)
+    pygame.draw.rect(minimap, (255, 255, 0), pygame.Rect(*scroll, *WINDOW_PIXELS), 2)
+
     return rects
 
+scroll = [0, 0]
+
+scroll[0] = Treeman.x - WINDOW_PIXELS[0] / 2
+scroll[1] = Treeman.y - 2 * WINDOW_PIXELS[1] / 3
+
+bgimage = pygame.image.load(os.path.join(BG_DIR, 'parallax_mountain_pack', 'layers', 'parallax-mountain-bg.png'))
+mgimage = pygame.image.load(os.path.join(BG_DIR, 'parallax_mountain_pack', 'layers', 'parallax-mountain-mountain-far.png'))
+fgimage = pygame.image.load(os.path.join(BG_DIR, 'parallax_mountain_pack', 'layers', 'parallax-mountain-foreground-trees.png'))
+t0 = time.time()
+
 while True:  # game loop
-    time += 1
+    t_step = time.time()
     key_state = ProcessPygameEvents(key_state)
-    display.fill(background_color)  # clear screen by filling it with blue
+    # background_color = UpdateBackgroundColour(background_color)
+    display.fill(background_color)
+    display.blit(pygame.transform.scale(bgimage, WINDOW_PIXELS), (0, 0))
+    for i in [-2, -1, 0, 1, 2]:
+        display.blit(pygame.transform.scale(mgimage, WINDOW_PIXELS), (i*WINDOW_PIXELS[0]-scroll[0]/10, 0-scroll[1]/10))
+    for i in [-2, -1, 0, 1, 2]:
+        display.blit(pygame.transform.scale(fgimage, WINDOW_PIXELS), (i*WINDOW_PIXELS[0]-scroll[0]/3, 0-scroll[1]/2))
+    minimap.fill([255, 0, 255])
+    minimap.set_colorkey((255, 0, 255))
 
-    map_rects = DrawMap(display, Map)
+    scroll[0] = scroll[0] + ((Treeman.x - WINDOW_PIXELS[0] / 2) - scroll[0])/5
+    scroll[1] = scroll[1] + ((Treeman.y - 2 * WINDOW_PIXELS[1] / 3) - scroll[1])/10
+
+
+    map_rects = DrawMap(display, minimap, Map, scroll)
     # sprite_pos = UpdatePosition(sprite_pos)
-    Finley.updatePos(key_state, 1, map_rects)
-    Scuttle.updatePos(key_state, 1, map_rects)
-
-    background_color = UpdateBackgroundColour(background_color)
+    Treeman.updatePos(key_state, t_step - t0, map_rects)
+    Scuttle.updatePos(key_state, t_step - t0, map_rects)
 
 
-    # display.blit(sprites['Finley']['walk'][int(time / 10) % len(sprites['Finley']['walk'].keys())], sprite_pos)
-
-
-    Finley.updateDraw(display)
-    Scuttle.updateDraw(display)
+    Treeman.updateDraw(display, minimap, scroll)
+    Scuttle.updateDraw(display, minimap, scroll)
 
 
     # display.blit(animation[int(time / 10) % len(animation.keys())], Finley.pos)
 
+
     screen.blit(pygame.transform.scale(display, WINDOW_SIZE), (0, 0))
+    screen.blit(minimap, (0, 0))
 
     pygame.display.update()
     clock.tick(60)
+    t0 = t_step
