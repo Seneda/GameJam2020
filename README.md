@@ -2,4 +2,4 @@
 
 A platformer with online multiplayer!
 
-![Alt text](Screenshots/Base Engine.png?raw=true "Optional Title")
+![Alt text](Screenshots/BaseEngine.png "A screenshot of the game in early development")
