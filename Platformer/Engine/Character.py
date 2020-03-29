@@ -173,15 +173,15 @@ class Character():
                 break
 
     def updateDraw(self, display, minimap, scroll):
-        display.blit(pygame.font.SysFont('Arial', 10).render('{:.1f}'.format(math.hypot(*self.speed)), True, (0, 0, 0)),
-                     (self.rect.x - scroll[0], self.rect.y - scroll[1] - 10))
+        # display.blit(pygame.font.SysFont('Arial', 10).render('{:.1f}'.format(math.hypot(*self.speed)), True, (0, 0, 0)),
+        #              (self.rect.x - scroll[0], self.rect.y - scroll[1] - 10))
         display.blit(sprites[self.name][self.animation_type][
                          int(self.animation_timer * 8) % len(sprites[self.name][self.animation_type])],
                      (self.x - scroll[0], self.y - scroll[1]))
         if self.collisions:
             pygame.draw.rect(minimap, (255, 0, 0), self.rect)
-            minimap.blit(pygame.font.SysFont('Arial', 20).render('{}'.format(len(self.collisions)), True, (0, 0, 0)),
-                         (self.rect.centerx - 4, self.rect.centery - 10))
+            # minimap.blit(pygame.font.SysFont('Arial', 20).render('{}'.format(len(self.collisions)), True, (0, 0, 0)),
+            #              (self.rect.centerx - 4, self.rect.centery - 10))
         else:
             pygame.draw.rect(minimap, (0, 255, 0), self.rect)
             pygame.draw.rect(minimap, (0, 0, 255), self.collision_rect)

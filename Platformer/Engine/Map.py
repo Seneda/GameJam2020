@@ -39,7 +39,7 @@ class Map(object):
         for i in range(0, len(backgrounds), 3):
             image_file, parallax_x, parallax_y = backgrounds[i:i+3]
             print(image_file)
-            self.background_layers.append((pygame.image.load(os.path.join(BG_DIR, image_file)), (int(parallax_x), int(parallax_y))))
+            self.background_layers.append((pygame.image.load(os.path.join(BG_DIR, image_file)).convert_alpha(), (int(parallax_x), int(parallax_y))))
 
     @property
     def size(self):
@@ -52,7 +52,7 @@ class Map(object):
             for offset in offsets:
                 if i == 0:
                     bgrect = pygame.Rect(*((offset+scroll_offset)*display.get_width() - scroll[0]/parallax[0], 0 - scroll[1]/parallax[1]), *(display.get_width(), display.get_height()))
-                    minimap.blit(pygame.font.SysFont('Arial', 50).render('BG:{:d}'.format(offset), True, (0, 0, 0)), (bgrect.centerx, bgrect.centery+50))
+                    # minimap.blit(pygame.font.SysFont('Arial', 50).render('BG:{:d}'.format(offset), True, (0, 0, 0)), (bgrect.centerx, bgrect.centery+50))
                 display.blit(pygame.transform.scale(bgimage, (display.get_width(), display.get_height())), ((offset+scroll_offset)*display.get_width() - scroll[0]/parallax[0], 0 - scroll[1]/parallax[1]))
 
         rects = []

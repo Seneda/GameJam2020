@@ -4,9 +4,10 @@ import pygame
 
 SPRITES_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "Resources", "sprites")
 
+sprites = {}
+
 def LoadSprites():
     print("Loading Sprites...")
-    sprites = {}
     for _, sprite_dirs, _ in os.walk(SPRITES_DIR):
         for sprite_name in sprite_dirs:
             print("Loading {}".format(sprite_name))
@@ -19,13 +20,10 @@ def LoadSprites():
                         animation_type = animation_name.split('_')[0]
                         animation_num = animation_name.split('_')[1].replace('.png', '')
                         sprites[sprite_name].setdefault(animation_type+'_right', {})[int(animation_num)] = pygame.image.load(
-                            os.path.join(SPRITES_DIR, sprite_name, animation_name))
+                            os.path.join(SPRITES_DIR, sprite_name, animation_name)).convert_alpha()
                         sprites[sprite_name].setdefault(animation_type+'_left', {})[int(animation_num)] = pygame.transform.flip(pygame.image.load(
-                            os.path.join(SPRITES_DIR, sprite_name, animation_name)), True, False)
+                            os.path.join(SPRITES_DIR, sprite_name, animation_name)).convert_alpha(), True, False)
                     except Exception as e:
                         print("Couldn't load {}".format(animation_name))
                         print(e)
-    print(sprites)
-    return sprites
 
-sprites = LoadSprites()

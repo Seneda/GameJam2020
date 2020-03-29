@@ -7,6 +7,7 @@ from time import time
 from Engine.Character import Character
 from Engine.Control import KeyState, ProcessPygameEvents
 from Engine.Map import Map
+from Engine.Sprites import LoadSprites
 
 
 class Level(object):
@@ -16,12 +17,14 @@ class Level(object):
         self.player_state_queue = player_state_queue
         self.npc_state_queue = npc_state_queue
 
-        self.map = Map(map_name)
 
         self.screen = pygame.display.set_mode(window_size, 0, 32)
+        self.map = Map(map_name)
+        LoadSprites()
         self.display = pygame.Surface((int(window_size[0]/magnification), int(window_size[1]/magnification)))
         self.minimap = pygame.Surface(self.map.size)
         self.clock = pygame.time.Clock()
+        self.font = pygame.font.SysFont('Arial', 50)
         
         self.scroll = [0, 0]
         self.scroll[0] = self.player.x - self.display.get_width() / 2
@@ -79,6 +82,7 @@ class Level(object):
             self.screen.blit(pygame.transform.scale(self.display, (self.screen.get_width(), self.screen.get_height())), (0, 0))
             self.screen.blit(pygame.transform.scale(self.minimap, (int(self.map.size[0] / 4), int(self.map.size[1] / 4))), (0, 0))
 
+            self.screen.blit(self.font.render("{:d} fps".format(int(self.clock.get_fps())), 1, pygame.Color("black")), (10, 50))
             pygame.display.update()
             self.clock.tick(60)
             t0 = t_step
