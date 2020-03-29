@@ -1,4 +1,0 @@
-# Backgrounds
-parallax_mountain_pack/layers/parallax-mountain-bg.png 100000 100000000
-parallax_mountain_pack/layers/parallax-mountain-mountain-far.png 10 100000000
-parallax_mountain_pack/layers/parallax-mountain-trees.png 2 100000000

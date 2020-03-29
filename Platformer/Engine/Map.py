@@ -10,9 +10,8 @@ BG_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "Resour
 
 
 class Map(object):
-    def __init__(self, tilemap_file, background_file):
-        self.parse_tilemap_file(tilemap_file)
-        self.parse_background_file(background_file)
+    def __init__(self, tilemap_file):
+        self.parse_tilemap_file(tilemap_file+'.txt')
 
     def parse_tilemap_file(self, tilemap_file):
         with open(os.path.join(MAPS_DIR, tilemap_file)) as f:
@@ -35,13 +34,6 @@ class Map(object):
             self.tiles.append([])
             for x in range(0, len(row)):
                 self.tiles[y].append(self.tileset.get(tilelayout[y][x], None))
-
-    def parse_background_file(self, background_file):
-        with open(os.path.join(BG_DIR, background_file)) as f:
-            data = f.read()
-        sections = [l.split() for l in data.strip().split('# ')]
-        sections = {k[0]: k[1:] for k in sections if len(k) > 1}
-        print(sections)
         backgrounds = sections['Backgrounds']
         self.background_layers = []
         for i in range(0, len(backgrounds), 3):

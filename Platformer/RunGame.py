@@ -1,151 +1,38 @@
-import os
-import sys
-from random import random
 import time
 import re
+from queue import Queue, Empty
+from threading import Event, Thread
 
-import pygame
-import pygame.locals
 import pygame.sprite
 
+from Engine.Control import KeyState, ProcessPygameEvents
 from Engine.Character import Character
-from Engine.Map import LoadTileMap, tile_dict, Map
+from Engine.Level import Level
+from Engine.Map import Map
 
 pygame.init()
 WINDOW_SIZE = (1200, 800)
 WINDOW_PIXELS = (300, 200)
 
-# Map = LoadTileMap("test_map.txt", tile_dict)
-#
-# MAP_SIZE = (16*len(Map[0]), 16*len(Map))
 
-map = Map("test_map_new_format.txt", "parallax_mountains.txt")
+npc_queue = Queue()
+player_queue = Queue()
+kill_signal = Event()
 
+def generate_npc_state(npc_queue, player_queue, kill_signal):
+    assert isinstance(kill_signal, Event)
+    while not kill_signal.is_set():
+        time.sleep(0.5)
+        while True:
+            try:
+                state = player_queue.get_nowait()
+            except Empty:
+                break
+        npc_queue.put(state)
 
+level = Level("test_map_new_format", "Scuttlefish", (20, 80), "Treeman", (30, 70), player_state_queue=player_queue, npc_state_queue=npc_queue)
+thread = Thread(target=generate_npc_state, args=(npc_queue, player_queue, kill_signal), daemon=True)
+thread.start()
+level.run()
+kill_signal.set()
 
-screen = pygame.display.set_mode(WINDOW_SIZE, 0, 32)  # initiate the window
-display = pygame.Surface(WINDOW_PIXELS)
-minimap = pygame.Surface(map.size)
-clock = pygame.time.Clock()
-
-# key_state = {"Up": False, "Down": False, "Left": False, "Right": False}
-
-background_color = (100, 100, 100)
-sprite_pos = [50, 50]
-
-class KeyState:
-  def __init__(self):
-    self.up = False
-    self.down = False
-    self.left = False
-    self.right = False
-
-# Controller 0 is Arrow
-# Controller 1 is WASD
-def ProcessPygameEvents(controllers,key_states):
-    controllerKeys = [[pygame.locals.K_UP,pygame.locals.K_DOWN,pygame.locals.K_LEFT,pygame.locals.K_RIGHT],\
-                [pygame.locals.K_w,pygame.locals.K_s,pygame.locals.K_a,pygame.locals.K_d]]
-
-    for event in pygame.event.get():  # event loop
-        if event.type == pygame.locals.QUIT:
-            pygame.quit()
-            sys.exit()
-        for controller in controllers: 
-            if event.type == pygame.locals.KEYDOWN:
-                if event.key == controllerKeys[controller][0]:
-                    key_states[controller].up = True
-                if event.key == controllerKeys[controller][1]:
-                    key_states[controller].down = True
-                if event.key == controllerKeys[controller][2]:
-                    key_states[controller].left = True
-                if event.key == controllerKeys[controller][3]:
-                    key_states[controller].right = True
-            if event.type == pygame.locals.KEYUP:
-                if event.key == controllerKeys[controller][0]:
-                    key_states[controller].up = False
-                if event.key == controllerKeys[controller][1]:
-                    key_states[controller].down = False
-                if event.key == controllerKeys[controller][2]:
-                    key_states[controller].left = False
-                if event.key == controllerKeys[controller][3]:
-                    key_states[controller].right = False
-
-    return key_states
-
-
-Treeman = Character(screen, 'Treeman', [20, 80])
-Scuttle = Character(screen, 'Scuttlefish', [70, 100])
-
-scroll = [0, 0]
-
-scroll[0] = Treeman.x - WINDOW_PIXELS[0] / 2
-scroll[1] = Treeman.y - 2 * WINDOW_PIXELS[1] / 3
-
-
-t0 = time.time()
-
-arrow_key_state = KeyState()
-wasd_key_state = KeyState()
-controllers = [0,1]
-key_states =[arrow_key_state,wasd_key_state]
-num_players = 2
-
-# create mutable var_player_state or later population
-var_player_states= [[0]*4 for i in range(num_players)]
-
-while True:  # game loop
-    t_step = time.time()
-
-    # Read in the other character's positions: 
-    # Format will be x,y,x_speed,y_speed
-    with open("game_state","r") as gs:
-        lines = gs.readlines()
-    for i in range(0,len(lines)):
-        temp = lines[i].split(',') # split into indivual strings
-        temp[3] = re.sub('[^0-9]','',temp[3]) # strip newline
-        for j in range(0,len(temp)):
-            var_player_states[i][j] = float(temp[j]) # convert the strings into floats in the player states
-
-    # Update dummy characters - @Seneda, comment out these to ignore it
-    Scuttle.x = var_player_states[1][0]
-    Scuttle.y = var_player_states[1][1]
-    # Scuttle.speed[0] = var_player_states[0][2] # uncomment when can handle physics of the non-playable characters
-    # Scuttle.speed[1] = var_player_states[0][3] # uncomment when can handle physics of the non-playable characters
-
-    key_states = ProcessPygameEvents(controllers,key_states)
-    arrow_key_state = key_states[0]
-    # wasd_key_state = key_states[1]
-
-    # background_color = UpdateBackgroundColour(background_color)
-    display.fill(background_color)
-    minimap.fill([0, 0, 0])
-    minimap.set_colorkey((0, 0, 0))
-
-    scroll[0] = scroll[0] + ((Treeman.x - WINDOW_PIXELS[0] / 2) - scroll[0])/5
-    scroll[1] = scroll[1] + ((Treeman.y - 2 * WINDOW_PIXELS[1] / 3) - scroll[1])/10
-
-    map_rects = map.draw(display, minimap, scroll)
-
-    Treeman.updatePos(arrow_key_state, t_step - t0, map_rects)
-    Scuttle.updatePos(wasd_key_state, t_step - t0, map_rects)
-
-    # Write the characters' positions to file
-    # Format will be x,y,x_speed,y_speed
-    # with open("game_state","w") as gs:
-    #     lines = gs.readlines()
-    # for i in range(0,len(lines)):
-    #     temp = lines[i].split(',') # split into indivual strings
-    #     temp[3] = re.sub('[^0-9]','',temp[3]) # strip newline
-    #     for j in range(0,len(temp)):
-    #         var_player_states[i][j] = float(temp[j]) # convert the strings into floats in the player states
-
-
-    Treeman.updateDraw(display, minimap, scroll)
-    Scuttle.updateDraw(display, minimap, scroll)
-
-    screen.blit(pygame.transform.scale(display, WINDOW_SIZE), (0, 0))
-    screen.blit(pygame.transform.scale(minimap, (int(map.size[0]/4), int(map.size[1]/4))), (0, 0))
-
-    pygame.display.update()
-    clock.tick(60)
-    t0 = t_step

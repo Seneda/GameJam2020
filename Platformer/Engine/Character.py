@@ -6,20 +6,8 @@ from Engine.Sprites import sprites
 
 
 class Character():
-    def __init__(self, screen, name, pos):
-        """Initialise the monkey and set its starting position"""
-        self.screen = screen
+    def __init__(self, name, pos):
         self.name = name
-
-        # Load image and get its rect.
-        # self.image = pygame.image.load('../sprites/' +name +'_walk' +'.png')
-        # self.rect = self.image.get_rect()
-        # self.screen_rect = screen.get_rect()
-
-        # self.centerxfloat = 0
-        # self.centeryfloat = 0
-        # self.rect.centerx = 0
-        # self.rect.centery = 0
 
         self.speed = [0, 0]  # speed in x,y notation (right and up)
         self.rect = pygame.Rect(*pos, 32, 32)
@@ -50,21 +38,42 @@ class Character():
         self.rect.y = val
         self.collision_rect.y = val
 
-    def updatePos(self, key_state, time_passed_s, collision_objects):
+    @property
+    def pos(self):
+        return (self.x, self.y)
+
+    @pos.setter
+    def pos(self, val):
+        self.x = val[0]
+        self.y = val[1]\
+
+    @property
+    def state(self):
+        return (*self.pos, *self.speed)
+
+    @state.setter
+    def state(self, val):
+        self.x = val[0]
+        self.y = val[1]
+        self.speed[0] = val[2]
+        self.speed[1] = val[3]
+
+    def updatePos(self, time_passed_s, collision_objects, key_state=None):
         self.animation_timer += time_passed_s
         self.jump_timer += time_passed_s
         self.speed[1] += self.gravity * time_passed_s
-        self.speed[0] = 0
-        if key_state.right:
-            self.speed[0] += self.run_speed
-        if key_state.left:
-            self.speed[0] -= self.run_speed
-        if key_state.up:
-            # limits how long you can hold jump for and keep accelerating upwards, but allows you to do a small jump by tapping and hold for up to 0.2s for a longer jump
-            if (self.jump_timer > 0.5) or (self.jump_timer < 0.1):
-                self.speed[1] -= self.jump_acceleration * time_passed_s
-                if self.jump_timer > 0.5:
-                    self.jump_timer = 0
+        if key_state is not None:
+            self.speed[0] = 0
+            if key_state.right:
+                self.speed[0] += self.run_speed
+            if key_state.left:
+                self.speed[0] -= self.run_speed
+            if key_state.up:
+                # limits how long you can hold jump for and keep accelerating upwards, but allows you to do a small jump by tapping and hold for up to 0.2s for a longer jump
+                if (self.jump_timer > 0.5) or (self.jump_timer < 0.1):
+                    self.speed[1] -= self.jump_acceleration * time_passed_s
+                    if self.jump_timer > 0.5:
+                        self.jump_timer = 0
 
         MAXSPEED = 15
 
