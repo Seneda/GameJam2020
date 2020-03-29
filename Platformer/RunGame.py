@@ -26,36 +26,49 @@ display = pygame.Surface(WINDOW_PIXELS)
 minimap = pygame.Surface(MAP_SIZE)
 clock = pygame.time.Clock()
 
-key_state = {"Up": False, "Down": False, "Left": False, "Right": False}
+# key_state = {"Up": False, "Down": False, "Left": False, "Right": False}
 
 background_color = (100, 100, 100)
 sprite_pos = [50, 50]
 
+class KeyState:
+  def __init__(self):
+    self.up = False
+    self.down = False
+    self.left = False
+    self.right = False
 
-def ProcessPygameEvents(key_state):
+# Controller 0 is Arrow
+# Controller 1 is WASD
+def ProcessPygameEvents(controllers,key_states):
+    controllerKeys = [[pygame.locals.K_UP,pygame.locals.K_DOWN,pygame.locals.K_LEFT,pygame.locals.K_RIGHT],\
+                [pygame.locals.K_w,pygame.locals.K_s,pygame.locals.K_a,pygame.locals.K_d]]
+
     for event in pygame.event.get():  # event loop
         if event.type == pygame.locals.QUIT:
             pygame.quit()
             sys.exit()
-        if event.type == pygame.locals.KEYDOWN:
-            if event.key == pygame.locals.K_UP:
-                key_state["Up"] = True
-            if event.key == pygame.locals.K_DOWN:
-                key_state["Down"] = True
-            if event.key == pygame.locals.K_LEFT:
-                key_state["Left"] = True
-            if event.key == pygame.locals.K_RIGHT:
-                key_state["Right"] = True
-        if event.type == pygame.locals.KEYUP:
-            if event.key == pygame.locals.K_UP:
-                key_state["Up"] = False
-            if event.key == pygame.locals.K_DOWN:
-                key_state["Down"] = False
-            if event.key == pygame.locals.K_LEFT:
-                key_state["Left"] = False
-            if event.key == pygame.locals.K_RIGHT:
-                key_state["Right"] = False
-    return key_state
+        for controller in controllers: 
+            if event.type == pygame.locals.KEYDOWN:
+                if event.key == controllerKeys[controller][0]:
+                    key_states[controller].up = True
+                if event.key == controllerKeys[controller][1]:
+                    key_states[controller].down = True
+                if event.key == controllerKeys[controller][2]:
+                    key_states[controller].left = True
+                if event.key == controllerKeys[controller][3]:
+                    key_states[controller].right = True
+            if event.type == pygame.locals.KEYUP:
+                if event.key == controllerKeys[controller][0]:
+                    key_states[controller].up = False
+                if event.key == controllerKeys[controller][1]:
+                    key_states[controller].down = False
+                if event.key == controllerKeys[controller][2]:
+                    key_states[controller].left = False
+                if event.key == controllerKeys[controller][3]:
+                    key_states[controller].right = False
+
+    return key_states
 
 
 # def UpdatePosition(sprite_pos):
@@ -82,11 +95,6 @@ def UpdateBackgroundColour(background_color):
     g %= 255
     b %= 255
     return (r, g, b)
-
-
-
-
-
 
 
 Treeman = Character(screen, 'Treeman', [20, 80])
@@ -118,9 +126,18 @@ mgimage = pygame.image.load(os.path.join(BG_DIR, 'parallax_mountain_pack', 'laye
 fgimage = pygame.image.load(os.path.join(BG_DIR, 'parallax_mountain_pack', 'layers', 'parallax-mountain-foreground-trees.png'))
 t0 = time.time()
 
+arrow_key_state = KeyState()
+wasd_key_state = KeyState()
+controllers = [0,1]
+key_states =[arrow_key_state,wasd_key_state]
+
 while True:  # game loop
     t_step = time.time()
-    key_state = ProcessPygameEvents(key_state)
+
+    key_states = ProcessPygameEvents(controllers,key_states)
+    arrow_key_state = key_states[0]
+    wasd_key_state = key_states[1]
+
     # background_color = UpdateBackgroundColour(background_color)
     display.fill(background_color)
     display.blit(pygame.transform.scale(bgimage, WINDOW_PIXELS), (0, 0))
@@ -137,8 +154,8 @@ while True:  # game loop
 
     map_rects = DrawMap(display, minimap, Map, scroll)
     # sprite_pos = UpdatePosition(sprite_pos)
-    Treeman.updatePos(key_state, t_step - t0, map_rects)
-    Scuttle.updatePos(key_state, t_step - t0, map_rects)
+    Treeman.updatePos(arrow_key_state, t_step - t0, map_rects)
+    Scuttle.updatePos(wasd_key_state, t_step - t0, map_rects)
 
 
     Treeman.updateDraw(display, minimap, scroll)

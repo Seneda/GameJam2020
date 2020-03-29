@@ -54,11 +54,11 @@ class Character():
         self.jump_timer += time_passed_s
         self.speed[1] += self.gravity * time_passed_s
         self.speed[0] = 0
-        if key_state['Right']:
+        if key_state.right:
             self.speed[0] += self.run_speed
-        if key_state['Left']:
+        if key_state.left:
             self.speed[0] -= self.run_speed
-        if key_state['Up']:
+        if key_state.up:
             # limits how long you can hold jump for and keep accelerating upwards, but allows you to do a small jump by tapping and hold for up to 0.2s for a longer jump
             if (self.jump_timer > 0.5) or (self.jump_timer < 0.1):
                 self.speed[1] -= self.jump_acceleration * time_passed_s
