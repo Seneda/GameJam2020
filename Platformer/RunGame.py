@@ -2,6 +2,7 @@ import os
 import sys
 from random import random
 import time
+import re
 
 import pygame
 import pygame.locals
@@ -130,13 +131,33 @@ arrow_key_state = KeyState()
 wasd_key_state = KeyState()
 controllers = [0,1]
 key_states =[arrow_key_state,wasd_key_state]
+num_players = 2
+
+# create mutable var_player_state or later population
+var_player_states= [[0]*4 for i in range(num_players)]
 
 while True:  # game loop
     t_step = time.time()
 
+    # Read in the other character's positions: 
+    # Format will be x,y,x_speed,y_speed
+    with open("game_state","r") as gs:
+        lines = gs.readlines()
+    for i in range(0,len(lines)):
+        temp = lines[i].split(',') # split into indivual strings
+        temp[3] = re.sub('[^0-9]','',temp[3]) # strip newline
+        for j in range(0,len(temp)):
+            var_player_states[i][j] = float(temp[j]) # convert the strings into floats in the player states
+
+    # Update dummy characters - @Seneda, comment out these to ignore it
+    Scuttle.x = var_player_states[1][0]
+    Scuttle.y = var_player_states[1][1]
+    # Scuttle.speed[0] = var_player_states[0][2] # uncomment when can handle physics of the non-playable characters
+    # Scuttle.speed[1] = var_player_states[0][3] # uncomment when can handle physics of the non-playable characters
+
     key_states = ProcessPygameEvents(controllers,key_states)
     arrow_key_state = key_states[0]
-    wasd_key_state = key_states[1]
+    # wasd_key_state = key_states[1]
 
     # background_color = UpdateBackgroundColour(background_color)
     display.fill(background_color)
@@ -157,9 +178,20 @@ while True:  # game loop
     Treeman.updatePos(arrow_key_state, t_step - t0, map_rects)
     Scuttle.updatePos(wasd_key_state, t_step - t0, map_rects)
 
+    # Write the characters' positions to file
+    # Format will be x,y,x_speed,y_speed
+    with open("game_state","w") as gs:
+        lines = gs.readlines()
+    for i in range(0,len(lines)):
+        temp = lines[i].split(',') # split into indivual strings
+        temp[3] = re.sub('[^0-9]','',temp[3]) # strip newline
+        for j in range(0,len(temp)):
+            var_player_states[i][j] = float(temp[j]) # convert the strings into floats in the player states
+
 
     Treeman.updateDraw(display, minimap, scroll)
     Scuttle.updateDraw(display, minimap, scroll)
+
 
 
     # display.blit(animation[int(time / 10) % len(animation.keys())], Finley.pos)

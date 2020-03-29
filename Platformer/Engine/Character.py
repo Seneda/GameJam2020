@@ -16,8 +16,8 @@ class Character():
         # self.rect = self.image.get_rect()
         # self.screen_rect = screen.get_rect()
 
-        self.centerxfloat = 0
-        self.centeryfloat = 0
+        # self.centerxfloat = 0
+        # self.centeryfloat = 0
         # self.rect.centerx = 0
         # self.rect.centery = 0
 
