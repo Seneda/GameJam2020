@@ -52,7 +52,6 @@ class Map(object):
             for offset in offsets:
                 if i == 0:
                     bgrect = pygame.Rect(*((offset+scroll_offset)*display.get_width() - scroll[0]/parallax[0], 0 - scroll[1]/parallax[1]), *(display.get_width(), display.get_height()))
-                    pygame.draw.rect(minimap, (0, 0, 255), bgrect, 4)
                     minimap.blit(pygame.font.SysFont('Arial', 50).render('BG:{:d}'.format(offset), True, (0, 0, 0)), (bgrect.centerx, bgrect.centery+50))
                 display.blit(pygame.transform.scale(bgimage, (display.get_width(), display.get_height())), ((offset+scroll_offset)*display.get_width() - scroll[0]/parallax[0], 0 - scroll[1]/parallax[1]))
 

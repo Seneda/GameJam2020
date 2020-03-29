@@ -50,7 +50,6 @@ class Level(object):
                 while True:
                     try:
                         state = self.npc_state_queue.get_nowait()
-                        print("got", state)
                         self.npc.state = state
                     except Empty:
                         break
@@ -73,9 +72,9 @@ class Level(object):
             self.npc.updatePos(t_step - t0, map_rects, None)
         
             self.player_state_queue.put(self.player.state)
-        
-            self.player.updateDraw(self.display, self.minimap, self.scroll)
+
             self.npc.updateDraw(self.display, self.minimap, self.scroll)
+            self.player.updateDraw(self.display, self.minimap, self.scroll)
         
             self.screen.blit(pygame.transform.scale(self.display, (self.screen.get_width(), self.screen.get_height())), (0, 0))
             self.screen.blit(pygame.transform.scale(self.minimap, (int(self.map.size[0] / 4), int(self.map.size[1] / 4))), (0, 0))
