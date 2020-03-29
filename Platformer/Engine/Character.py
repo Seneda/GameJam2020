@@ -11,7 +11,7 @@ class Character():
         self.screen = screen
         self.name = name
 
-        #Load image and get its rect.
+        # Load image and get its rect.
         # self.image = pygame.image.load('../sprites/' +name +'_walk' +'.png')
         # self.rect = self.image.get_rect()
         # self.screen_rect = screen.get_rect()
@@ -21,14 +21,13 @@ class Character():
         # self.rect.centerx = 0
         # self.rect.centery = 0
 
-        self.speed = [0,0] # speed in x,y notation (right and up)
+        self.speed = [0, 0]  # speed in x,y notation (right and up)
         self.rect = pygame.Rect(*pos, 32, 32)
         self.collision_rect = pygame.Rect(*pos, 24, 32)
         self.jump_timer = 1000
         self.run_speed = 5
         self.jump_acceleration = 100
-        self.gravity = 0.25 * 9.81 * 16 # 16 pixels = 1m
-
+        self.gravity = 0.25 * 9.81 * 16  # 16 pixels = 1m
 
         self.animation_timer = 0
         self.animation_type = "idle"
@@ -36,6 +35,7 @@ class Character():
     @property
     def x(self):
         return self.rect.x
+
     @x.setter
     def x(self, val):
         self.rect.x = val
@@ -44,6 +44,7 @@ class Character():
     @property
     def y(self):
         return self.rect.y
+
     @y.setter
     def y(self, val):
         self.rect.y = val
@@ -99,18 +100,22 @@ class Character():
             elif self.speed[0] < 0:
                 self.animation_type = "jump_left"
             else:
-                self.animation_type = 'jump_right'
+                if 'left' in self.animation_type:
+                    self.animation_type = 'jump_left'
+                else:
+                    self.animation_type = 'jump_right'
 
         if self.animation_type != last_animation:
             self.animation_timer = 0
 
     def detect_collisions(self, collision_objects):
-    #     self.collision_rect = self.rect.copy()
-    #     self.collision_rect.width = 24
-    #     # self.collision_rect.width = 24
-    #     self.collision_rect.center = self.rect.center
+        #     self.collision_rect = self.rect.copy()
+        #     self.collision_rect.width = 24
+        #     # self.collision_rect.width = 24
+        #     self.collision_rect.center = self.rect.center
         self.collisions = sorted([r for r in collision_objects if self.collision_rect.colliderect(r)],
-                                 key=lambda x: math.hypot(x.centerx - self.collision_rect.centerx, x.centery - self.collision_rect.centery))
+                                 key=lambda x: math.hypot(x.centerx - self.collision_rect.centerx,
+                                                          x.centery - self.collision_rect.centery))
         collision_counter = 0
         while self.collisions:
             collision_counter += 1
@@ -160,12 +165,14 @@ class Character():
 
     def updateDraw(self, display, minimap, scroll):
         display.blit(pygame.font.SysFont('Arial', 10).render('{:.1f}'.format(math.hypot(*self.speed)), True, (0, 0, 0)),
-                     (self.rect.x - scroll[0], self.rect.y-scroll[1] - 10))
-        display.blit(sprites[self.name][self.animation_type][int(self.animation_timer*8)%len(sprites[self.name][self.animation_type])], (self.x - scroll[0], self.y - scroll[1]))
+                     (self.rect.x - scroll[0], self.rect.y - scroll[1] - 10))
+        display.blit(sprites[self.name][self.animation_type][
+                         int(self.animation_timer * 8) % len(sprites[self.name][self.animation_type])],
+                     (self.x - scroll[0], self.y - scroll[1]))
         if self.collisions:
-            pygame.draw.rect(minimap, (255,0,0), self.rect)
-            minimap.blit(pygame.font.SysFont('Arial', 20).render('{}'.format(len(self.collisions)), True, (0, 0, 0)), (self.rect.centerx-4, self.rect.centery-10))
+            pygame.draw.rect(minimap, (255, 0, 0), self.rect)
+            minimap.blit(pygame.font.SysFont('Arial', 20).render('{}'.format(len(self.collisions)), True, (0, 0, 0)),
+                         (self.rect.centerx - 4, self.rect.centery - 10))
         else:
-            pygame.draw.rect(minimap, (0,255,0), self.rect, 2)
-            pygame.draw.rect(minimap, (0,0,255), self.collision_rect, 2)
-
+            pygame.draw.rect(minimap, (0, 255, 0), self.rect)
+            pygame.draw.rect(minimap, (0, 0, 255), self.collision_rect)
