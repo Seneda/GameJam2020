@@ -180,13 +180,13 @@ while True:  # game loop
 
     # Write the characters' positions to file
     # Format will be x,y,x_speed,y_speed
-    with open("game_state","w") as gs:
-        lines = gs.readlines()
-    for i in range(0,len(lines)):
-        temp = lines[i].split(',') # split into indivual strings
-        temp[3] = re.sub('[^0-9]','',temp[3]) # strip newline
-        for j in range(0,len(temp)):
-            var_player_states[i][j] = float(temp[j]) # convert the strings into floats in the player states
+    # with open("game_state","w") as gs:
+    #     lines = gs.readlines()
+    # for i in range(0,len(lines)):
+    #     temp = lines[i].split(',') # split into indivual strings
+    #     temp[3] = re.sub('[^0-9]','',temp[3]) # strip newline
+    #     for j in range(0,len(temp)):
+    #         var_player_states[i][j] = float(temp[j]) # convert the strings into floats in the player states
 
 
     Treeman.updateDraw(display, minimap, scroll)
