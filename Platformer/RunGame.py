@@ -1,8 +1,8 @@
+import multiprocessing
 import time
 import re
-from multiprocessing import Queue, Process
+from multiprocessing import Queue, Process, Event
 from queue import Empty
-from threading import Event, Thread
 
 import pygame.sprite
 
@@ -12,13 +12,25 @@ from Engine.Level import Level
 from Engine.Map import Map
 
 
+def connect_to_reomte_game(game_a_npc_queue, game_b_player_queue, kill_signal):
+    while not kill_signal.is_set():
+        try:
+            player = game_b_player_queue.get_nowait()
+            game_a_npc_queue.put(player)
+        except Empty:
+            pass
+    print("Connection Ending")
+
+
 if __name__ == '__main__':
+    multiprocessing.set_start_method("spawn")
     pygame.init()
     WINDOW_SIZE = (600, 400)
 
-
-    npc_queue = Queue()
-    player_queue = Queue()
+    game_a_player_queue = Queue()
+    game_a_npc_queue = Queue()
+    game_b_player_queue = Queue()
+    game_b_npc_queue = Queue()
     kill_signal = Event()
 
     # def generate_npc_state(npc_queue, player_queue, kill_signal):
@@ -40,8 +52,8 @@ if __name__ == '__main__':
         npc_name="Treeman",
         npc_start_pos=(30, 70),
         window_size=WINDOW_SIZE,
-        player_state_queue=player_queue,
-        npc_state_queue=npc_queue
+        player_state_queue=game_a_player_queue,
+        npc_state_queue=game_a_npc_queue
     )
 
     levelb = Level(
@@ -51,17 +63,28 @@ if __name__ == '__main__':
         npc_name="Scuttlefish",
         npc_start_pos=(20, 70),
         window_size=WINDOW_SIZE,
-        player_state_queue=npc_queue,
-        npc_state_queue=player_queue
+        player_state_queue=game_b_player_queue,
+        npc_state_queue=game_b_npc_queue
     )
 
-    pa = Process(target=levela.run)
-    pb = Process(target=levelb.run)
-    pa.start()
+    pa = Process(target=levela.run, args=(kill_signal, 100))
+    pb = Process(target=levelb.run, args=(kill_signal, 10))
+    p_conn_a = Process(target=connect_to_reomte_game, args=(game_a_npc_queue, game_b_player_queue, kill_signal))
+    p_conn_b = Process(target=connect_to_reomte_game, args=(game_b_npc_queue, game_a_player_queue, kill_signal))
     pb.start()
-    pa.join()
-    pb.join()
-    print("Sending kill signal")
-    kill_signal.set()
-    print("Done")
+    pa.start()
+    p_conn_a.start()
+    p_conn_b.start()
 
+    while not kill_signal.is_set():
+        print("Tick", kill_signal.is_set())
+        time.sleep(1)
+    print("joining threads")
+    pa.join()
+    print("joining threads")
+    pb.join()
+    print("joining threads")
+    p_conn_a.join()
+    print("joining threads")
+    p_conn_b.join()
+    print("All done")
