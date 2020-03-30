@@ -15,8 +15,8 @@ def LoadSprites():
             for _, _, animation_files in os.walk(os.path.join(SPRITES_DIR, sprite_name)):
                 for animation_name in animation_files:
                     try:
-                        print("Loading {}".format(animation_name))
-                        print(animation_name)
+                        #print("Loading {}".format(animation_name))
+                        #print(animation_name)
                         animation_type = animation_name.split('_')[0]
                         animation_num = animation_name.split('_')[1].replace('.png', '')
                         sprites[sprite_name].setdefault(animation_type+'_right', {})[int(animation_num)] = pygame.image.load(

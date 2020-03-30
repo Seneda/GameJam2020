@@ -11,6 +11,7 @@ BG_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "Resour
 
 class Map(object):
     def __init__(self, tilemap_file):
+        print("loading Map :{}".format(tilemap_file))
         self.parse_tilemap_file(tilemap_file+'.txt')
 
     def parse_tilemap_file(self, tilemap_file):
@@ -20,7 +21,6 @@ class Map(object):
         sections = {k[0]: k[1:] for k in sections if len(k) > 1}
         self.tileset = {}
         for i in range(0, len(sections['Tileset']), 2):
-            print(i)
             try:
                 self.tileset[sections["Tileset"][i]] = pygame.image.load(
                     os.path.join(TILES_DIR, sections["Tileset"][i + 1]))
@@ -38,7 +38,7 @@ class Map(object):
         self.background_layers = []
         for i in range(0, len(backgrounds), 3):
             image_file, parallax_x, parallax_y = backgrounds[i:i+3]
-            print(image_file)
+            #print(image_file)
             self.background_layers.append((pygame.image.load(os.path.join(BG_DIR, image_file)).convert_alpha(), (int(parallax_x), int(parallax_y))))
 
     @property
