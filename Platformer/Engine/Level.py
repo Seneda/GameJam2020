@@ -13,12 +13,12 @@ from Engine.Sprites import LoadSprites
 
 
 class Level(object):
-    def __init__(self, map_name, player_character_name, player_start_pos, npc_name, npc_start_pos,
-                 window_size=(800, 400), magnification=2, player_state_queue=None, npc_state_queue=None):
+    def __init__(self, map_name, player_character_name, player_start_pos, npc_names, npc_start_positions,
+                 window_size=(800, 400), magnification=2, player_state_queue=None, npc_state_queues=None):
         self.player = Character(player_character_name, player_start_pos)
-        self.npc = Character(npc_name, npc_start_pos)
+        self.npcs = [Character(npc_names[i], npc_start_positions[i]) for i in range(len(npc_names))]
         self.player_state_queue = player_state_queue
-        self.npc_state_queue = npc_state_queue
+        self.npc_state_queues = npc_state_queues
         self.window_size = window_size
         self.magnification = magnification
         self.map_name = map_name
@@ -55,19 +55,17 @@ class Level(object):
         while not kill_signal.is_set():  # game loop
             t_step = time()
 
-            # Read in the other character's positions: 
-            # Format will be x,y,x_speed,y_speed
-            if self.npc_state_queue:
-                i = 0
-                while True:
-                    try:
-                        i += 1
-                        state = self.npc_state_queue.get_nowait()
-                        self.npc.state = state
-                    except Empty:
-                        break
-                if i >= 1:
-                    print("Game {} got {} messages".format(self.player.name, i))
+            for i in range(len(self.npc_state_queues)):
+                # Read in the other character's positions:
+                # Format will be x,y,x_speed,y_speed
+                if self.npc_state_queues[i]:
+                    while True:
+                        try:
+                            state = self.npc_state_queues[i].get_nowait()
+                            self.npcs[i].state = state
+                        except Empty:
+                            break
+
             game_state, key_states = ProcessPygameEvents(controllers, key_states)
             if game_state.get('Exit'):
                 pygame.quit()
@@ -83,14 +81,16 @@ class Level(object):
 
             map_rects = self.map.draw(self.display, self.minimap, self.scroll)
 
+
             self.player.updatePos(t_step - t0, map_rects, arrow_key_state)
-            self.npc.updatePos(t_step - t0, map_rects, None)
+            for npc in self.npcs:
+                npc.updatePos(t_step - t0, map_rects, None)
 
-            if random() > 0.001:
-                self.player_state_queue.put(self.player.state)
+            # if random() >= 0.0:
+            self.player_state_queue.put(self.player.state)
 
-            self.npc.updateDraw(self.display, self.minimap, self.scroll)
-            self.player.updateDraw(self.display, self.minimap, self.scroll)
+            for character in self.npcs + [self.player]:
+                character.updateDraw(self.display, self.minimap, self.scroll)
 
             self.screen.blit(pygame.transform.scale(self.display, (self.screen.get_width(), self.screen.get_height())),
                              (0, 0))
