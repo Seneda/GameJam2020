@@ -1,5 +1,5 @@
 import re
-from queue import Queue, Empty
+from queue import Empty
 
 import pygame
 from time import time
@@ -16,21 +16,25 @@ class Level(object):
         self.npc = Character(npc_name, npc_start_pos)
         self.player_state_queue = player_state_queue
         self.npc_state_queue = npc_state_queue
+        self.window_size = window_size
+        self.magnification = magnification
+        self.map_name = map_name
 
-
-        self.screen = pygame.display.set_mode(window_size, 0, 32)
-        self.map = Map(map_name)
-        LoadSprites()
-        self.display = pygame.Surface((int(window_size[0]/magnification), int(window_size[1]/magnification)))
-        self.minimap = pygame.Surface(self.map.size)
+    def run(self):
+        pygame.init()
+        self.screen = pygame.display.set_mode(self.window_size, 0, 32)
+        self.display = pygame.Surface((int(self.window_size[0] / self.magnification), int(self.window_size[1] / self.magnification)))
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont('Arial', 50)
-        
+        LoadSprites()
+        self.map = Map(self.map_name)
+        self.minimap = pygame.Surface(self.map.size)
+
         self.scroll = [0, 0]
         self.scroll[0] = self.player.x - self.display.get_width() / 2
         self.scroll[1] = self.player.y - self.display.get_height() * 2 / 3
 
-    def run(self):        
+
         
         arrow_key_state = KeyState()
         wasd_key_state = KeyState()
@@ -49,7 +53,6 @@ class Level(object):
             # Read in the other character's positions: 
             # Format will be x,y,x_speed,y_speed
             if self.npc_state_queue:
-                assert isinstance(self.npc_state_queue, Queue)
                 while True:
                     try:
                         state = self.npc_state_queue.get_nowait()
