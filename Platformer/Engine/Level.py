@@ -46,6 +46,10 @@ class Level(object):
         var_player_states = [[0] * 4 for i in range(num_players)]
 
         t0 = time()
+
+        # For tracking avg framerate
+        totalFrameRate = 0
+        countFrameRate = 0
         
         while True:  # game loop
             t_step = time()
@@ -62,6 +66,7 @@ class Level(object):
         
             game_state, key_states = ProcessPygameEvents(controllers, key_states)
             if game_state.get('Exit'):
+                # Exiting
                 pygame.quit()
                 return
 
@@ -71,11 +76,22 @@ class Level(object):
         
             self.scroll[0] = self.scroll[0] + ((self.player.x - self.display.get_width() / 2) - self.scroll[0]) / 5
             self.scroll[1] = self.scroll[1] + ((self.player.y - 2 * self.display.get_height() / 3) - self.scroll[1]) / 10
-        
+
             map_rects = self.map.draw(self.display, self.minimap, self.scroll)
-        
-            self.player.updatePos(t_step - t0, map_rects, arrow_key_state)
-            self.npc.updatePos(t_step - t0, map_rects, None)
+            
+            width_to_filter = self.display.get_width() / 2 # best guess at distance a player could feasibly move in a frame (either side)
+            height_to_filter = self.display.get_height() / 2
+            x_limits = [self.player.x-width_to_filter,self.player.x+width_to_filter]
+            y_limits = [self.player.y-height_to_filter,self.player.y+height_to_filter]
+            relevant_map_rects = [rect for rect in map_rects if ((rect.x < x_limits[1])and(rect.x > x_limits[0])and(rect.y < y_limits[1])and(rect.y > y_limits[0]))]
+
+            self.player.updatePos(t_step - t0, relevant_map_rects, arrow_key_state)
+
+            x_limits = [self.npc.x-width_to_filter,self.npc.x+width_to_filter]
+            y_limits = [self.npc.y-height_to_filter,self.npc.y+height_to_filter]
+            relevant_map_rects = [rect for rect in map_rects if ((rect.x < x_limits[1])and(rect.x > x_limits[0])and(rect.y < y_limits[1])and(rect.y > y_limits[0]))]
+            
+            self.npc.updatePos(t_step - t0, relevant_map_rects, None)
         
             self.player_state_queue.put(self.player.state)
 
@@ -85,7 +101,16 @@ class Level(object):
             self.screen.blit(pygame.transform.scale(self.display, (self.screen.get_width(), self.screen.get_height())), (0, 0))
             self.screen.blit(pygame.transform.scale(self.minimap, (int(self.map.size[0] / 4), int(self.map.size[1] / 4))), (0, 0))
 
-            self.screen.blit(self.font.render("{:d} fps".format(int(self.clock.get_fps())), 1, pygame.Color("black")), (10, 50))
+            frameRate = int(self.clock.get_fps());
+            totalFrameRate += frameRate;
+            countFrameRate += 1;
+            if (countFrameRate > 100):
+                avgFrameRate = totalFrameRate/countFrameRate
+                print("average frameRate: " +str(avgFrameRate))
+                totalFrameRate = 0
+                countFrameRate = 0
+
+            self.screen.blit(self.font.render("{:d} fps".format(frameRate), 1, pygame.Color("black")), (10, 50))
             pygame.display.update()
             self.clock.tick(60)
             t0 = t_step

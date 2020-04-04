@@ -1,5 +1,6 @@
 import time
 import re
+import multiprocessing
 from multiprocessing import Queue, Process
 from queue import Empty
 from threading import Event, Thread
@@ -13,6 +14,7 @@ from Engine.Map import Map
 
 
 if __name__ == '__main__':
+    multiprocessing.set_start_method("spawn")
     pygame.init()
     WINDOW_SIZE = (600, 400)
 
@@ -55,12 +57,14 @@ if __name__ == '__main__':
         npc_state_queue=player_queue
     )
 
-    pa = Process(target=levela.run)
-    pb = Process(target=levelb.run)
-    pa.start()
-    pb.start()
-    pa.join()
-    pb.join()
+    # pa = Process(target=levela.run)
+    # pb = Process(target=levelb.run)
+    # pa.start()
+    # pb.start()
+    # pa.join()
+    # pb.join()
+
+    levela.run()
     print("Sending kill signal")
     kill_signal.set()
     print("Done")
