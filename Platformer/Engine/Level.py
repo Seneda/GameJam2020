@@ -46,30 +46,30 @@ class Level(object):
             self.sockets = []
             for npc in self.npcs:
                 sock = socket(AF_INET, SOCK_STREAM)
-                sock.bind(("127.0.0.1", PORT))
+                sock.bind(('192.168.1.65', PORT))
+                sock.listen(5)
                 sock, client_address = sock.accept()
+                print("Connection from",client_address)
                 self.sockets.append(sock)
-            for sock in self.sockets:
-                sock.bind(("127.0.0.1", PORT))
 
         while not kill_signal.is_set():
             for i, npc in enumerate(self.npc_state_queues):
                 msg = self.sockets[i].recv(BUFSIZ).decode("utf8")
                 if msg:
                     try:
-                        pos = msg.split(']')[0]
-                        if pos.startswith('['):
+                        print("Message = ", msg)
+                        pos = msg.split(')')[0]
+                        if pos.startswith('('):
                             pos = pos[1:]
                         pos = pos.split(', ')
                         if len(pos) == 4:
                             npc.put([float(p) for p in pos])
 
-                        print("Message = ", msg)
                     except:
                         pass
-            for i, npc in enumerate(self.npc_state_queues):
-                msg = str([*self.player.pos, *self.player.speed]) + "\n"
-                self.sockets[i].send(msg.encode())
+            # for i, npc in enumerate(self.npc_state_queues):
+            #     msg = str([*self.player.pos, *self.player.speed]) + "\n"
+            #     self.sockets[i].send(msg.encode())
 
     def run(self, kill_signal=None, framerate=60):
         print("Running game {}, {}".format(self.player.name, self.map_name))

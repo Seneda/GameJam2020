@@ -61,13 +61,13 @@ def main():
 if __name__=="__main__":
     level = Level(
         map_name="test_map_new_format",
-        player_character_name="Batman",
+        player_character_name="Treeman",
         player_start_pos=(20 + 32, 80),
-        npc_names=["Treeman"],
+        npc_names=["Batman"],
         npc_start_positions=[(20 + 64, 80) ],
         window_size=(800, 400),
         player_state_queue=[Queue()],
         npc_state_queues=[Queue()],
-        server=False,
+        server=True,
     )
     level.run()
