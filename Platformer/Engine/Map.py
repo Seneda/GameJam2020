@@ -60,10 +60,12 @@ class Map(object):
             for x in range(0, len(self.tiles[y])):
                 tile = self.tiles[y][x]
                 if tile is not None:
-                    display.blit(tile, (x * 16 - scroll[0], y * 16 - scroll[1], 16, 16))
+                    if (x * 16 - scroll[0] > -16) & (x * 16 - scroll[0] < int(display.get_width())):
+                        display.blit(tile, (x * 16 - scroll[0], y * 16 - scroll[1], 16, 16))
                     rects.append(pygame.Rect(x * 16, y * 16, 16, 16))
                     if minimap:
-                        pygame.draw.rect(minimap, (255, 0, 255), rects[-1])
+                        if (x * 16 - scroll[0] > -16) & (x * 16 - scroll[0] < int(display.get_width())):
+                            pygame.draw.rect(minimap, (255, 0, 255), rects[-1])
         if minimap:
             pygame.draw.rect(minimap, (255, 255, 0), pygame.Rect(*scroll, display.get_width(), display.get_height()), 4)
         return rects
