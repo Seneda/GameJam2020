@@ -16,7 +16,7 @@ from Engine.Sprites import LoadSprites
 
 class Level(object):
     def __init__(self, map_name, player_character_name, player_start_pos, npc_names, npc_start_positions,
-                 window_size=(800, 400), magnification=2, player_state_queue=None, npc_state_queues=None, enable_minimap=True):
+                 window_size=(800, 400), magnification=2, player_state_queue=None, npc_state_queues=None, enable_minimap=True, server=False):
         self.player = Character(player_character_name, player_start_pos)
         # print("Player: ", self.player)
         self.npcs = [Character(npc_names[i], npc_start_positions[i]) for i in range(len(npc_names))]
@@ -27,6 +27,7 @@ class Level(object):
         self.magnification = magnification
         self.map_name = map_name
         self.enable_minimap = enable_minimap
+        self.server = server
 
         # print(self.player)
     def network_loop(self, kill_signal, server=False):
@@ -64,6 +65,8 @@ class Level(object):
         pygame.init()
         pygame.event.set_allowed([pygame.locals.QUIT, pygame.locals.KEYDOWN, pygame.locals.KEYUP])
 
+        thread = Thread(target=self.network_loop, args=(kill_signal, self.server))
+        thread.start()
         flags =  pygame.locals.DOUBLEBUF
         self.screen = pygame.display.set_mode(self.window_size, flags, 32)
         if self.magnification != 1:
