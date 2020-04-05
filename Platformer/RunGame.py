@@ -27,7 +27,7 @@ def main():
 
     kill_signal = Event()
 
-    chars = {0: "Treeman", 1: "Scuttlefish", 2: "Centiman", 3: "Batman",}
+    chars = {0: "Treeman", 1: "Scuttlefish", }
 
     char_queues = {player_idx: [Queue() for c in chars if c is not player_idx] for player_idx, player_name in chars.items()}
 
@@ -36,7 +36,7 @@ def main():
         remote_queues[player_idx] = []
         for remote_idx, queues in char_queues.items():
             if remote_idx != player_idx:
-                remote_queues[player_idx].append(queues[player_idx%2])
+                remote_queues[player_idx].append(queues[player_idx%len(chars)-1])
 
     levels = [Level(
         map_name="test_map_new_format",
@@ -59,4 +59,14 @@ def main():
         time.sleep(1)
 
 if __name__=="__main__":
-    main()
+    level = Level(
+        map_name="test_map_new_format",
+        player_character_name="Batman",
+        player_start_pos=(20 + 32, 80),
+        npc_names=["Treeman"],
+        npc_start_positions=[(20 + 64, 80) ],
+        window_size=(800, 400),
+        player_state_queue=[Queue()],
+        npc_state_queues=[Queue()]
+    )
+    level.run()

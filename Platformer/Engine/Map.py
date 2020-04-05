@@ -71,7 +71,8 @@ class Map(object):
                                     display.blit(tile, (x * 16 - scroll[0], y * 16 - scroll[1], 16, 16))
                                     rects.append(tile_rect)
                     if minimap:
-                        pygame.draw.rect(minimap, (255, 0, 255), tile_rect)
+                        minimap.blit(tile, (x * 16, y * 16, 16, 16))
+                        # pygame.draw.rect(minimap, (255, 0, 255), tile_rect, 1)
         if minimap:
             pygame.draw.rect(minimap, (255, 255, 0), pygame.Rect(*scroll, display.get_width(), display.get_height()), 4)
         return rects

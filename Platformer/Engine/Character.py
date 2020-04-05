@@ -105,7 +105,7 @@ class Character():
             else:
                 self.animation_type = 'idle_right'
 
-        if self.speed[1] < 0:
+        if abs(self.speed[1]) > 10:
             if self.speed[0] > 0:
                 self.animation_type = "jump_right"
             elif self.speed[0] < 0:

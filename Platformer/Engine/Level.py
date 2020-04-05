@@ -1,4 +1,5 @@
 import re
+from socket import AF_INET, socket, SOCK_STREAM
 from multiprocessing import Event
 from queue import Empty
 from random import random
@@ -28,6 +29,33 @@ class Level(object):
         self.enable_minimap = enable_minimap
 
         # print(self.player)
+    def network_loop(self, kill_signal, server=False):
+
+        PORT = 33012
+        BUFSIZ = 1024
+        if not server:
+            HOST = '51.9.122.159'
+            ADDR = (HOST, PORT)
+            self.sockets = []
+            for npc in self.npcs:
+                self.sockets.append(socket(AF_INET, SOCK_STREAM))
+            for sock in self.sockets:
+                sock.connect(ADDR)
+        else:
+            self.sockets = []
+            for npc in self.npcs:
+                self.sockets.append(socket(AF_INET, SOCK_STREAM))
+            for sock in self.sockets:
+                sock.bind(("127.0.0.1", PORT))
+
+        while not kill_signal.is_set():
+            for i, npc in enumerate(self.npc_state_queues_):
+                msg = self.sockets[i].recv(BUFSIZ).decode("utf8")
+                if msg:
+                    print(msg)
+            for i, npc in enumerate(self.npc_state_queues_):
+                msg = str([*self.pos, *self.speed])
+                self.sockets[i].send(msg)
 
     def run(self, kill_signal=None, framerate=60):
         print("Running game {}, {}".format(self.player.name, self.map_name))
@@ -99,6 +127,7 @@ class Level(object):
             self.scroll[0] = self.scroll[0] + ((self.player.x - self.display.get_width() / 2) - self.scroll[0]) / 5
             self.scroll[1] = self.scroll[1] + (
                         (self.player.y - 2 * self.display.get_height() / 3) - self.scroll[1]) / 5
+
 
             map_rects = self.map.draw(self.display, self.minimap, self.scroll)
             
