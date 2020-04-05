@@ -45,7 +45,10 @@ class Level(object):
         else:
             self.sockets = []
             for npc in self.npcs:
-                self.sockets.append(socket(AF_INET, SOCK_STREAM))
+                sock = socket(AF_INET, SOCK_STREAM)
+                sock.bind(("127.0.0.1", PORT))
+                sock, client_address = sock.accept()
+                self.sockets.append(sock)
             for sock in self.sockets:
                 sock.bind(("127.0.0.1", PORT))
 
@@ -53,14 +56,17 @@ class Level(object):
             for i, npc in enumerate(self.npc_state_queues):
                 msg = self.sockets[i].recv(BUFSIZ).decode("utf8")
                 if msg:
-                    pos = msg.split(']')[0]
-                    if pos.startswith('['):
-                        pos = pos[1:]
-                    pos = pos.split(', ')
-                    if len(pos) == 4:
-                        npc.put([float(p) for p in pos])
+                    try:
+                        pos = msg.split(']')[0]
+                        if pos.startswith('['):
+                            pos = pos[1:]
+                        pos = pos.split(', ')
+                        if len(pos) == 4:
+                            npc.put([float(p) for p in pos])
 
-                    print("Message = ", msg)
+                        print("Message = ", msg)
+                    except:
+                        pass
             for i, npc in enumerate(self.npc_state_queues):
                 msg = str([*self.player.pos, *self.player.speed]) + "\n"
                 self.sockets[i].send(msg.encode())
