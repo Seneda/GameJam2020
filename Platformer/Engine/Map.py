@@ -16,8 +16,10 @@ class Map(object):
 
     def parse_tilemap_file(self, tilemap_file):
         with open(os.path.join(MAPS_DIR, tilemap_file)) as f:
-            data = f.read()
-        sections = [l.split() for l in data.strip().split('# ')]
+            data = f.readlines()
+        data = "\n".join([d for d in data if not d.strip().startswith("%")])
+        sections = [l.split() for l in data.strip().split('# ') if not l.strip().startswith("%")]
+        print(sections)
         sections = {k[0]: k[1:] for k in sections if len(k) > 1}
         self.tileset = {}
         for i in range(0, len(sections['Tileset']), 2):
@@ -60,12 +62,16 @@ class Map(object):
             for x in range(0, len(self.tiles[y])):
                 tile = self.tiles[y][x]
                 if tile is not None:
-                    if (x * 16 - scroll[0] > -16) & (x * 16 - scroll[0] < int(display.get_width())):
-                        display.blit(tile, (x * 16 - scroll[0], y * 16 - scroll[1], 16, 16))
-                    rects.append(pygame.Rect(x * 16, y * 16, 16, 16))
+
+                    tile_rect = pygame.Rect(x * 16, y * 16, 16, 16)
+                    if x * 16 - scroll[0] <= display.get_width()*2:
+                        if x * 16 - scroll[0] >= -display.get_width():
+                            if y * 16 - scroll[1] <= display.get_height()*2:
+                                if y * 16 - scroll[1] >= -display.get_height():
+                                    display.blit(tile, (x * 16 - scroll[0], y * 16 - scroll[1], 16, 16))
+                                    rects.append(tile_rect)
                     if minimap:
-                        if (x * 16 - scroll[0] > -16) & (x * 16 - scroll[0] < int(display.get_width())):
-                            pygame.draw.rect(minimap, (255, 0, 255), rects[-1])
+                        pygame.draw.rect(minimap, (255, 0, 255), tile_rect)
         if minimap:
             pygame.draw.rect(minimap, (255, 255, 0), pygame.Rect(*scroll, display.get_width(), display.get_height()), 4)
         return rects

@@ -1,4 +1,5 @@
 import multiprocessing
+import sys
 import time
 import re
 from multiprocessing import Queue, Process, Event
@@ -6,10 +7,7 @@ from queue import Empty
 
 import pygame.sprite
 
-from Engine.Control import KeyState, ProcessPygameEvents
-from Engine.Character import Character
 from Engine.Level import Level
-from Engine.Map import Map
 
 
 def connect_to_reomte_game(remote_queues, player_queue, kill_signal):
@@ -22,8 +20,7 @@ def connect_to_reomte_game(remote_queues, player_queue, kill_signal):
             pass
     print("Connection Ending")
 
-
-if __name__ == '__main__':
+def main():
     multiprocessing.set_start_method("spawn")
     pygame.init()
     WINDOW_SIZE = (600, 400)
@@ -60,3 +57,6 @@ if __name__ == '__main__':
     while not kill_signal.is_set():
         print("Tick", kill_signal.is_set())
         time.sleep(1)
+
+if __name__=="__main__":
+    main()

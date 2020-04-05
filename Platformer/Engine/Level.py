@@ -5,6 +5,7 @@ from random import random
 from threading import Thread
 
 import pygame
+import pygame.locals
 from time import time, sleep
 
 from Engine.Character import Character
@@ -14,7 +15,7 @@ from Engine.Sprites import LoadSprites
 
 class Level(object):
     def __init__(self, map_name, player_character_name, player_start_pos, npc_names, npc_start_positions,
-                 window_size=(800, 400), magnification=2, player_state_queue=None, npc_state_queues=None):
+                 window_size=(800, 400), magnification=2, player_state_queue=None, npc_state_queues=None, enable_minimap=True):
         self.player = Character(player_character_name, player_start_pos)
         # print("Player: ", self.player)
         self.npcs = [Character(npc_names[i], npc_start_positions[i]) for i in range(len(npc_names))]
@@ -24,6 +25,8 @@ class Level(object):
         self.window_size = window_size
         self.magnification = magnification
         self.map_name = map_name
+        self.enable_minimap = enable_minimap
+
         # print(self.player)
 
     def run(self, kill_signal=None, framerate=60):
@@ -31,14 +34,23 @@ class Level(object):
         if kill_signal is None:
             kill_signal = Event()
         pygame.init()
-        self.screen = pygame.display.set_mode(self.window_size, 0, 32)
-        self.display = pygame.Surface(
-            (int(self.window_size[0] / self.magnification), int(self.window_size[1] / self.magnification)))
+        pygame.event.set_allowed([pygame.locals.QUIT, pygame.locals.KEYDOWN, pygame.locals.KEYUP])
+
+        flags =  pygame.locals.DOUBLEBUF
+        self.screen = pygame.display.set_mode(self.window_size, flags, 32)
+        if self.magnification != 1:
+            self.display = pygame.Surface((int(self.window_size[0] / self.magnification), int(self.window_size[1] / self.magnification)))
+        else:
+            self.display = self.screen
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont('Arial', 50)
         LoadSprites()
         self.map = Map(self.map_name)
-        self.minimap = pygame.Surface(self.map.size)
+        if self.enable_minimap:
+            self.minimap = pygame.Surface(self.map.size)
+        else:
+            self.minimap = None
+
 
         self.scroll = [0, 0]
         self.scroll[0] = self.player.x - self.display.get_width() / 2
@@ -58,7 +70,7 @@ class Level(object):
         # For tracking avg framerate
         totalFrameRate = 0
         countFrameRate = 0
-        
+
         while not kill_signal.is_set():  # game loop
             t_step = time()
 
@@ -80,12 +92,13 @@ class Level(object):
                 break
 
             self.display.fill(([0, 0, 0]))
-            self.minimap.fill([0, 0, 0])
-            self.minimap.set_colorkey((0, 0, 0))
+            if self.minimap is not None:
+                self.minimap.fill([0, 0, 0])
+                self.minimap.set_colorkey((0, 0, 0))
 
             self.scroll[0] = self.scroll[0] + ((self.player.x - self.display.get_width() / 2) - self.scroll[0]) / 5
             self.scroll[1] = self.scroll[1] + (
-                        (self.player.y - 2 * self.display.get_height() / 3) - self.scroll[1]) / 10
+                        (self.player.y - 2 * self.display.get_height() / 3) - self.scroll[1]) / 5
 
             map_rects = self.map.draw(self.display, self.minimap, self.scroll)
             
@@ -110,8 +123,8 @@ class Level(object):
             for character in self.npcs + [self.player]:
                 character.updateDraw(self.display, self.minimap, self.scroll)
 
-            self.screen.blit(pygame.transform.scale(self.display, (self.screen.get_width(), self.screen.get_height())),
-                             (0, 0))
+            if self.magnification != 1:
+                self.screen.blit(pygame.transform.scale(self.display, (self.screen.get_width(), self.screen.get_height())), (0, 0))
             self.screen.blit(
                 pygame.transform.scale(self.minimap, (int(self.map.size[0] / 4), int(self.map.size[1] / 4))), (0, 0))
 

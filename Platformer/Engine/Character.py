@@ -2,7 +2,7 @@ import math
 
 import pygame
 
-from Engine.Sprites import sprites
+from Engine.Sprites import sprites, sprite_speeds
 
 
 class Character():
@@ -13,12 +13,13 @@ class Character():
         self.rect = pygame.Rect(*pos, 32, 32)
         self.collision_rect = pygame.Rect(*pos, 24, 32)
         self.jump_timer = 1000
-        self.run_speed = 5
-        self.jump_acceleration = 100
-        self.gravity = 0.25 * 9.81 * 16  # 16 pixels = 1m
+        self.run_acceleration = 500*60
+        self.jump_acceleration = 16 * 50 * 2 * 2
+        self.gravity = 5 * 9.81 * 16  # 16 pixels = 1m
 
         self.animation_timer = 0
-        self.animation_type = "idle"
+        self.animation_type = "idle_left"
+        self.collisions = []
 
     @property
     def x(self):
@@ -59,36 +60,37 @@ class Character():
         self.speed[1] = val[3]
 
     def updatePos(self, time_passed_s, collision_objects, key_state=None):
+        if time_passed_s == 0:
+            return
         self.animation_timer += time_passed_s
         self.jump_timer += time_passed_s
         self.speed[1] += self.gravity * time_passed_s
         if key_state is not None:
             self.speed[0] = 0
             if key_state.right:
-                self.speed[0] += self.run_speed
+                self.speed[0] += self.run_acceleration * time_passed_s
             if key_state.left:
-                self.speed[0] -= self.run_speed
+                self.speed[0] -= self.run_acceleration * time_passed_s
             if key_state.up:
                 # limits how long you can hold jump for and keep accelerating upwards, but allows you to do a small jump by tapping and hold for up to 0.2s for a longer jump
-                if (self.jump_timer > 0.5) or (self.jump_timer < 0.1):
+                if (self.jump_timer > 0.5) or (self.jump_timer < 0.2):
                     self.speed[1] -= self.jump_acceleration * time_passed_s
                     if self.jump_timer > 0.5:
                         self.jump_timer = 0
 
-        MAXSPEED = 15
+        MAXSPEED = 8 / time_passed_s
 
         self.speed[0] = min(MAXSPEED, max(-MAXSPEED, self.speed[0]))
         self.speed[1] = min(MAXSPEED, max(-MAXSPEED, self.speed[1]))
-
         if abs(self.speed[0]) > abs(self.speed[1]):
-            self.x = self.x + self.speed[0]
+            self.x = self.x + float(self.speed[0]) * time_passed_s
             self.detect_collisions(collision_objects)
-            self.y = self.y + self.speed[1]
+            self.y = self.y + float(self.speed[1]) * time_passed_s
             self.detect_collisions(collision_objects)
         else:
-            self.y = self.y + self.speed[1]
+            self.y = self.y + float(self.speed[1]) * time_passed_s
             self.detect_collisions(collision_objects)
-            self.x = self.x + self.speed[0]
+            self.x = self.x + float(self.speed[0]) * time_passed_s
             self.detect_collisions(collision_objects)
 
         last_animation = self.animation_type
@@ -127,6 +129,8 @@ class Character():
                                                           x.centery - self.collision_rect.centery))
         collision_counter = 0
         while self.collisions:
+            if collision_counter > 10:
+                break
             collision_counter += 1
             for collision in self.collisions:
 
@@ -173,15 +177,19 @@ class Character():
                 break
 
     def updateDraw(self, display, minimap, scroll):
-        # display.blit(pygame.font.SysFont('Arial', 10).render('{:.1f}'.format(math.hypot(*self.speed)), True, (0, 0, 0)),
+        # display.blit(pygame.font.SysFont('Arial', 10).render('{:.1f}'.format(self.speed[0]), True, (0, 0, 0)),
         #              (self.rect.x - scroll[0], self.rect.y - scroll[1] - 10))
+        # display.blit(pygame.font.SysFont('Arial', 10).render('{:.1f}'.format(self.speed[1]), True, (0, 0, 0)),
+        #              (self.rect.x - scroll[0] + 24, self.rect.y - scroll[1] - 10))
         display.blit(sprites[self.name][self.animation_type][
-                         int(self.animation_timer * 8) % len(sprites[self.name][self.animation_type])],
+                         int(self.animation_timer * sprite_speeds[self.name][self.animation_type]) % len(sprites[self.name][self.animation_type])],
                      (self.x - scroll[0], self.y - scroll[1]))
-        if self.collisions:
-            pygame.draw.rect(minimap, (255, 0, 0), self.rect)
-            # minimap.blit(pygame.font.SysFont('Arial', 20).render('{}'.format(len(self.collisions)), True, (0, 0, 0)),
-            #              (self.rect.centerx - 4, self.rect.centery - 10))
-        else:
-            pygame.draw.rect(minimap, (0, 255, 0), self.rect)
-            pygame.draw.rect(minimap, (0, 0, 255), self.collision_rect)
+
+        if minimap is not None:
+            if self.collisions:
+                pygame.draw.rect(minimap, (255, 0, 0), self.rect)
+                # minimap.blit(pygame.font.SysFont('Arial', 20).render('{}'.format(len(self.collisions)), True, (0, 0, 0)),
+                #              (self.rect.centerx - 4, self.rect.centery - 10))
+            else:
+                pygame.draw.rect(minimap, (0, 255, 0), self.rect)
+                pygame.draw.rect(minimap, (0, 0, 255), self.collision_rect)
