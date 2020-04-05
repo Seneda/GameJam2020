@@ -50,13 +50,20 @@ class Level(object):
                 sock.bind(("127.0.0.1", PORT))
 
         while not kill_signal.is_set():
-            for i, npc in enumerate(self.npc_state_queues_):
+            for i, npc in enumerate(self.npc_state_queues):
                 msg = self.sockets[i].recv(BUFSIZ).decode("utf8")
                 if msg:
-                    print(msg)
-            for i, npc in enumerate(self.npc_state_queues_):
-                msg = str([*self.pos, *self.speed])
-                self.sockets[i].send(msg)
+                    pos = msg.split(']')[0]
+                    if pos.startswith('['):
+                        pos = pos[1:]
+                    pos = pos.split(', ')
+                    if len(pos) == 4:
+                        npc.put([float(p) for p in pos])
+
+                    print("Message = ", msg)
+            for i, npc in enumerate(self.npc_state_queues):
+                msg = str([*self.player.pos, *self.player.speed]) + "\n"
+                self.sockets[i].send(msg.encode())
 
     def run(self, kill_signal=None, framerate=60):
         print("Running game {}, {}".format(self.player.name, self.map_name))

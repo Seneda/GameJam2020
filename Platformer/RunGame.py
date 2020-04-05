@@ -67,6 +67,7 @@ if __name__=="__main__":
         npc_start_positions=[(20 + 64, 80) ],
         window_size=(800, 400),
         player_state_queue=[Queue()],
-        npc_state_queues=[Queue()]
+        npc_state_queues=[Queue()],
+        server=False,
     )
     level.run()

@@ -32,7 +32,7 @@ def on_closing(event=None):
 
 
 #----Now comes the sockets part----
-HOST = '80.189.136.21'
+HOST = '51.9.122.159'
 PORT = 33012
 BUFSIZ = 1024
 ADDR = (HOST, PORT)
