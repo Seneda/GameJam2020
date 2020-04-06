@@ -57,7 +57,6 @@ class Level(object):
                 msg = self.sockets[i].recv(BUFSIZ).decode("utf8")
                 if msg:
                     try:
-                        print("Message = ", msg)
                         pos = msg.split(')')[0]
                         if pos.startswith('('):
                             pos = pos[1:]
@@ -65,11 +64,12 @@ class Level(object):
                         if len(pos) == 4:
                             npc.put([float(p) for p in pos])
 
+                        print("Message = ", msg)
                     except:
                         pass
-            # for i, npc in enumerate(self.npc_state_queues):
-            #     msg = str([*self.player.pos, *self.player.speed]) + "\n"
-            #     self.sockets[i].send(msg.encode())
+            for i, npc in enumerate(self.npc_state_queues):
+                msg = str([*self.player.pos, *self.player.speed]) + "\n"
+                self.sockets[i].send(msg.encode())
 
     def run(self, kill_signal=None, framerate=60):
         print("Running game {}, {}".format(self.player.name, self.map_name))
@@ -114,8 +114,9 @@ class Level(object):
         # For tracking avg framerate
         totalFrameRate = 0
         countFrameRate = 0
-
+        frame_count = 0
         while not kill_signal.is_set():  # game loop
+            frame_count += 1
             t_step = time()
 
             for i in range(len(self.npc_state_queues)):
@@ -162,8 +163,10 @@ class Level(object):
                 npc.updatePos(t_step - t0, relevant_map_rects, None)
         
             # if random() >= 0.0:
-            for player_state_queue in self.player_state_queues:
-                player_state_queue.put(self.player.state)
+            if (frame_count % 6) == 0:
+                print("Sending ", frame_count)
+                for player_state_queue in self.player_state_queues:
+                    player_state_queue.put(self.player.state)
 
             for character in self.npcs + [self.player]:
                 character.updateDraw(self.display, self.minimap, self.scroll)
