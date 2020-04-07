@@ -154,7 +154,6 @@ class Character():
                     break
                 if self.collision_rect.centerx < collision.left:
                     self.speed[0] = 0
-                    print("Left Collision", self.speed)
                     self.collision_rect.right = collision.left
                     self.rect.center = self.collision_rect.center
                     self.collisions = sorted([r for r in collision_objects if self.collision_rect.colliderect(r)],

@@ -23,54 +23,21 @@ from Engine.Level import Level
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--server", help="increase output verbosity",
+parser.add_argument("--server", help="Set the game up in server mode, "
+                                     "use this if you have forwarded a port to accept connections",
                     action="store_true", default=False)
+parser.add_argument("--host-ip", help="The ip address on which the connections will be made. "
+                                      "For server, use the localhost, for the client use the public ip of the server.",
+                    default='localhost', )
+parser.add_argument("--fps", help="The target framerate to run at",
+                    default=40, type=int)
+parser.add_argument("--port", help="The ip address on which the connections will be made. "
+                                      "For server, use the localhost, for the client use the public ip of the server.",
+                    default=12345, type=int)
 
 def main():
 
-    multiprocessing.set_start_method("spawn")
-    pygame.init()
-    WINDOW_SIZE = (600, 400)
-
-    kill_signal = Event()
-    if args.server:
-        chars = {0: "Treeman", 1: "Batman", }
-    else:
-        chars = {0: "Batman", 1: "Treeman", }
-
-    char_queues = {player_idx: [Queue() for c in chars if c is not player_idx] for player_idx, player_name in chars.items()}
-
-    remote_queues = {}
-    for player_idx in char_queues.keys():
-        remote_queues[player_idx] = []
-        for remote_idx, queues in char_queues.items():
-            if remote_idx != player_idx:
-                remote_queues[player_idx].append(queues[player_idx%len(chars)-1])
-
-    levels = [Level(
-        map_name="test_map_new_format",
-        player_character_name=player_name,
-        player_start_pos=(20 + player_idx * 32, 80),
-        npc_names=[npc_name for npc_idx, npc_name in chars.items() if player_name != npc_name],
-        npc_start_positions=[(20 + npc_idx * 320, 80) for npc_idx, npc_name in chars.items() if player_name != npc_name],
-        window_size=WINDOW_SIZE,
-        player_state_queue=char_queues[player_idx],
-        npc_state_queues=remote_queues[player_idx],
-        server=args.server,
-    ) for player_idx, player_name in chars.items()]
-
-    processes = [Process(target=level.run, args=(kill_signal, 60)) for level in levels]
-
-    for proc in processes:
-        proc.start()
-
-    while not kill_signal.is_set():
-        print("Tick", kill_signal.is_set())
-        time.sleep(1)
-
-if __name__=="__main__":
     args = parser.parse_args()
-    print(args)
     level = Level(
         map_name="test_map_new_format",
         player_character_name="Treeman" if args.server else "Batman",
@@ -81,5 +48,51 @@ if __name__=="__main__":
         player_state_queue=[Queue()],
         npc_state_queues=[Queue()],
         server=args.server,
+        host=args.host_ip,
+        port=args.port,
     )
-    level.run()
+    level.run(framerate=args.fps)
+
+    #   EXANPLE OF 4 WAY MULTIPLAYER, NOT READY TO DELETE JUST YET
+    # multiprocessing.set_start_method("spawn")
+    # pygame.init()
+    # WINDOW_SIZE = (600, 400)
+    #
+    # kill_signal = Event()
+    # if args.server:
+    #     chars = {0: "Treeman", 1: "Batman", }
+    # else:
+    #     chars = {0: "Batman", 1: "Treeman", }
+    #
+    # char_queues = {player_idx: [Queue() for c in chars if c is not player_idx] for player_idx, player_name in chars.items()}
+    #
+    # remote_queues = {}
+    # for player_idx in char_queues.keys():
+    #     remote_queues[player_idx] = []
+    #     for remote_idx, queues in char_queues.items():
+    #         if remote_idx != player_idx:
+    #             remote_queues[player_idx].append(queues[player_idx%len(chars)-1])
+    #
+    # levels = [Level(
+    #     map_name="test_map_new_format",
+    #     player_character_name=player_name,
+    #     player_start_pos=(20 + player_idx * 32, 80),
+    #     npc_names=[npc_name for npc_idx, npc_name in chars.items() if player_name != npc_name],
+    #     npc_start_positions=[(20 + npc_idx * 320, 80) for npc_idx, npc_name in chars.items() if player_name != npc_name],
+    #     window_size=WINDOW_SIZE,
+    #     player_state_queue=char_queues[player_idx],
+    #     npc_state_queues=remote_queues[player_idx],
+    #     server=args.server,
+    # ) for player_idx, player_name in chars.items()]
+    #
+    # processes = [Process(target=level.run, args=(kill_signal, 60)) for level in levels]
+    #
+    # for proc in processes:
+    #     proc.start()
+    #
+    # while not kill_signal.is_set():
+    #     print("Tick", kill_signal.is_set())
+    #     time.sleep(1)
+
+if __name__=="__main__":
+    main()

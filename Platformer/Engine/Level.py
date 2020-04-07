@@ -14,13 +14,12 @@ from Engine.Control import KeyState, ProcessPygameEvents
 from Engine.Map import Map
 from Engine.Sprites import LoadSprites
 
-HOST = 'localhost'
-PORT = 12342
 BUFSIZE = 1024
 
 class Level(object):
     def __init__(self, map_name, player_character_name, player_start_pos, npc_names=(), npc_start_positions=(),
-                 window_size=(800, 400), magnification=2, player_state_queue=None, npc_state_queues=None, enable_minimap=True, server=False):
+                 window_size=(800, 400), magnification=2, player_state_queue=None, npc_state_queues=None,
+                 enable_minimap=True, server=False, host='localhost', port=12345):
         self.player = Character(player_character_name, player_start_pos)
         # print("Player: ", self.player)
         self.npcs = [Character(npc_names[i], npc_start_positions[i]) for i in range(len(npc_names))]
@@ -32,34 +31,43 @@ class Level(object):
         self.map_name = map_name
         self.enable_minimap = enable_minimap
         self.server = server
+        self.host_ip = host
+        self.port = port
 
         # print(self.player)
 
     def run_server_thread(self, kill_signal):
-        print("Starting network loop as {}".format("server" if self.server else "client"))
+        try:
+            print("Starting network loop as {}, {}".format("server" if self.server else "client", (self.host_ip, self.port)))
 
-        self.sockets = []
-        for npc in self.npcs:
-            sock = socket(AF_INET, SOCK_STREAM)
-            sock.settimeout(5)
-            # sock.bind(('192.168.1.65', PORT))
-            sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-            sock.bind(('localhost', PORT))
-            sock.listen(5)
-            sock, client_address = sock.accept()
-            sock.setblocking(0)
-            # sock.setblocking(False)
-            print("Connection from", client_address)
-            self.sockets.append(sock)
-            print("Server Connected")
+            self.sockets = []
+            for npc in self.npcs:
+                sock = socket(AF_INET, SOCK_STREAM)
+                sock.settimeout(60)
+                sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+                sock.bind(('localhost', self.port))
+                sock.listen(5)
+                sock, client_address = sock.accept()
+                # sock.setblocking(False)
+                # sock.setblocking(False)
+                print("Connection from", client_address)
+                self.sockets.append(sock)
+                print("Server Connected")
+                recv_thread = Thread(target=self.run_recv_message_loop, args=(kill_signal,))
+                send_thread = Thread(target=self.run_send_message_loop, args=(kill_signal,))
+                recv_thread.start()
+                send_thread.start()
+                recv_thread.join()
+                send_thread.join()
 
-        self.run_message_loop(kill_signal)
-
+        except Exception as e:
+            print("Could not connect to a remote player, continuing in single player mode")
+            print(e)
 
     def run_client_thread(self, kill_signal):
         print("Starting network loop as {}".format("server" if self.server else "client"))
 
-        ADDR = (HOST, PORT)
+        ADDR = (self.host_ip, self.port)
         self.sockets = []
         for q in self.npcs:
             sock = socket(AF_INET, SOCK_STREAM)
@@ -67,20 +75,28 @@ class Level(object):
             self.sockets.append(socket(AF_INET, SOCK_STREAM))
         for sock in self.sockets:
             sock.connect(ADDR)
-            sock.setblocking(0)
+            # sock.setblocking(False)
             print("Client Connected")
 
-        self.run_message_loop(kill_signal)
+        recv_thread = Thread(target=self.run_recv_message_loop, args=(kill_signal,))
+        send_thread = Thread(target=self.run_send_message_loop, args=(kill_signal,))
+        recv_thread.start()
+        send_thread.start()
+        recv_thread.join()
+        send_thread.join()
 
-    def run_message_loop(self, kill_signal):
+    def run_send_message_loop(self, kill_signal):
         while not kill_signal.is_set():
             for i, q in enumerate(self.player_state_queues):
                 try:
                     msg = str(q.get_nowait())
-                    print("Sending ", msg)
+                    # print("Sending ", msg)
                     self.sockets[i].send(msg.encode())
                 except Empty:
                     pass
+
+    def run_recv_message_loop(self, kill_signal):
+        while not kill_signal.is_set():
             for i, npc in enumerate(self.npc_state_queues):
                 try:
                     msg = self.sockets[i].recv(BUFSIZE).decode("utf8")
@@ -93,7 +109,7 @@ class Level(object):
                             if len(pos) == 5:
                                 npc.put([float(p) for p in pos[1:]])
 
-                            print("Message Recvd = ", pos)
+                            # print("Message Recvd = ", pos)
                         except:
                             print("Exception")
                             pass
