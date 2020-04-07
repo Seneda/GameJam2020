@@ -1,5 +1,5 @@
 import re
-from socket import AF_INET, socket, SOCK_STREAM
+from socket import AF_INET, socket, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from multiprocessing import Event
 from queue import Empty
 from random import random
@@ -14,8 +14,12 @@ from Engine.Control import KeyState, ProcessPygameEvents
 from Engine.Map import Map
 from Engine.Sprites import LoadSprites
 
+HOST = 'localhost'
+PORT = 12342
+BUFSIZE = 1024
+
 class Level(object):
-    def __init__(self, map_name, player_character_name, player_start_pos, npc_names, npc_start_positions,
+    def __init__(self, map_name, player_character_name, player_start_pos, npc_names=(), npc_start_positions=(),
                  window_size=(800, 400), magnification=2, player_state_queue=None, npc_state_queues=None, enable_minimap=True, server=False):
         self.player = Character(player_character_name, player_start_pos)
         # print("Player: ", self.player)
@@ -30,46 +34,71 @@ class Level(object):
         self.server = server
 
         # print(self.player)
-    def network_loop(self, kill_signal, server=False):
 
-        PORT = 33012
-        BUFSIZ = 1024
-        if not server:
-            HOST = '51.9.122.159'
-            ADDR = (HOST, PORT)
-            self.sockets = []
-            for npc in self.npcs:
-                self.sockets.append(socket(AF_INET, SOCK_STREAM))
-            for sock in self.sockets:
-                sock.connect(ADDR)
-        else:
-            self.sockets = []
-            for npc in self.npcs:
-                sock = socket(AF_INET, SOCK_STREAM)
-                sock.bind(('192.168.1.65', PORT))
-                sock.listen(5)
-                sock, client_address = sock.accept()
-                print("Connection from",client_address)
-                self.sockets.append(sock)
+    def run_server_thread(self, kill_signal):
+        print("Starting network loop as {}".format("server" if self.server else "client"))
 
+        self.sockets = []
+        for npc in self.npcs:
+            sock = socket(AF_INET, SOCK_STREAM)
+            sock.settimeout(5)
+            # sock.bind(('192.168.1.65', PORT))
+            sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+            sock.bind(('localhost', PORT))
+            sock.listen(5)
+            sock, client_address = sock.accept()
+            sock.setblocking(0)
+            # sock.setblocking(False)
+            print("Connection from", client_address)
+            self.sockets.append(sock)
+            print("Server Connected")
+
+        self.run_message_loop(kill_signal)
+
+
+    def run_client_thread(self, kill_signal):
+        print("Starting network loop as {}".format("server" if self.server else "client"))
+
+        ADDR = (HOST, PORT)
+        self.sockets = []
+        for q in self.npcs:
+            sock = socket(AF_INET, SOCK_STREAM)
+            # sock.setblocking(False)
+            self.sockets.append(socket(AF_INET, SOCK_STREAM))
+        for sock in self.sockets:
+            sock.connect(ADDR)
+            sock.setblocking(0)
+            print("Client Connected")
+
+        self.run_message_loop(kill_signal)
+
+    def run_message_loop(self, kill_signal):
         while not kill_signal.is_set():
+            for i, q in enumerate(self.player_state_queues):
+                try:
+                    msg = str(q.get_nowait())
+                    print("Sending ", msg)
+                    self.sockets[i].send(msg.encode())
+                except Empty:
+                    pass
             for i, npc in enumerate(self.npc_state_queues):
-                msg = self.sockets[i].recv(BUFSIZ).decode("utf8")
-                if msg:
-                    try:
-                        pos = msg.split(')')[0]
-                        if pos.startswith('('):
-                            pos = pos[1:]
-                        pos = pos.split(', ')
-                        if len(pos) == 4:
-                            npc.put([float(p) for p in pos])
+                try:
+                    msg = self.sockets[i].recv(BUFSIZE).decode("utf8")
+                    if msg:
+                        try:
+                            pos = msg.split(')')[0]
+                            if pos.startswith('('):
+                                pos = pos[1:]
+                            pos = pos.split(', ')
+                            if len(pos) == 5:
+                                npc.put([float(p) for p in pos[1:]])
 
-                        print("Message = ", msg)
-                    except:
-                        pass
-            for i, npc in enumerate(self.npc_state_queues):
-                msg = str([*self.player.pos, *self.player.speed]) + "\n"
-                self.sockets[i].send(msg.encode())
+                            print("Message Recvd = ", pos)
+                        except:
+                            print("Exception")
+                            pass
+                except BlockingIOError:
+                    pass
 
     def run(self, kill_signal=None, framerate=60):
         print("Running game {}, {}".format(self.player.name, self.map_name))
@@ -77,8 +106,11 @@ class Level(object):
             kill_signal = Event()
         pygame.init()
         pygame.event.set_allowed([pygame.locals.QUIT, pygame.locals.KEYDOWN, pygame.locals.KEYUP])
+        if self.server:
+            thread = Thread(target=self.run_server_thread, args=(kill_signal,), daemon=True)
+        else:
+            thread = Thread(target=self.run_client_thread, args=(kill_signal,), daemon=True)
 
-        thread = Thread(target=self.network_loop, args=(kill_signal, self.server))
         thread.start()
         flags =  pygame.locals.DOUBLEBUF
         self.screen = pygame.display.set_mode(self.window_size, flags, 32)
@@ -162,11 +194,11 @@ class Level(object):
                 relevant_map_rects = [rect for rect in map_rects if ((rect.x < x_limits[1])and(rect.x > x_limits[0])and(rect.y < y_limits[1])and(rect.y > y_limits[0]))]
                 npc.updatePos(t_step - t0, relevant_map_rects, None)
         
-            # if random() >= 0.0:
-            if (frame_count % 6) == 0:
-                print("Sending ", frame_count)
-                for player_state_queue in self.player_state_queues:
-                    player_state_queue.put(self.player.state)
+            if random() >= 0.0:
+                if (frame_count % 2) == 0:
+                    # print("Sending State ", frame_count, *self.player.state)
+                    for player_state_queue in self.player_state_queues:
+                        player_state_queue.put((frame_count, *self.player.state))
 
             for character in self.npcs + [self.player]:
                 character.updateDraw(self.display, self.minimap, self.scroll)

@@ -1,3 +1,4 @@
+import argparse
 import multiprocessing
 import sys
 import time
@@ -10,24 +11,32 @@ import pygame.sprite
 from Engine.Level import Level
 
 
-def connect_to_reomte_game(remote_queues, player_queue, kill_signal):
-    while not kill_signal.is_set():
-        try:
-            player = player_queue.get_nowait()
-            for remote_queue in remote_queues:
-                remote_queue.put(player)
-        except Empty:
-            pass
-    print("Connection Ending")
+# def connect_to_reomte_game(remote_queues, player_queue, kill_signal):
+#     while not kill_signal.is_set():
+#         try:
+#             player = player_queue.get_nowait()
+#             for remote_queue in remote_queues:
+#                 remote_queue.put(player)
+#         except Empty:
+#             pass
+#     print("Connection Ending")
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--server", help="increase output verbosity",
+                    action="store_true", default=False)
 
 def main():
+
     multiprocessing.set_start_method("spawn")
     pygame.init()
     WINDOW_SIZE = (600, 400)
 
     kill_signal = Event()
-
-    chars = {0: "Treeman", 1: "Scuttlefish", }
+    if args.server:
+        chars = {0: "Treeman", 1: "Batman", }
+    else:
+        chars = {0: "Batman", 1: "Treeman", }
 
     char_queues = {player_idx: [Queue() for c in chars if c is not player_idx] for player_idx, player_name in chars.items()}
 
@@ -46,7 +55,8 @@ def main():
         npc_start_positions=[(20 + npc_idx * 320, 80) for npc_idx, npc_name in chars.items() if player_name != npc_name],
         window_size=WINDOW_SIZE,
         player_state_queue=char_queues[player_idx],
-        npc_state_queues=remote_queues[player_idx]
+        npc_state_queues=remote_queues[player_idx],
+        server=args.server,
     ) for player_idx, player_name in chars.items()]
 
     processes = [Process(target=level.run, args=(kill_signal, 60)) for level in levels]
@@ -59,15 +69,17 @@ def main():
         time.sleep(1)
 
 if __name__=="__main__":
+    args = parser.parse_args()
+    print(args)
     level = Level(
         map_name="test_map_new_format",
-        player_character_name="Treeman",
-        player_start_pos=(20 + 32, 80),
-        npc_names=["Batman"],
-        npc_start_positions=[(20 + 64, 80) ],
+        player_character_name="Treeman" if args.server else "Batman",
+        player_start_pos=(20 + 32 if args.server else 64, 80),
+        npc_names=["Batman" if args.server else "Treeman"],
+        npc_start_positions=[(20 + 64 if args.server else 32, 80)],
         window_size=(800, 400),
         player_state_queue=[Queue()],
         npc_state_queues=[Queue()],
-        server=True,
+        server=args.server,
     )
     level.run()

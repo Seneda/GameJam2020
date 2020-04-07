@@ -19,7 +19,6 @@ class Map(object):
             data = f.readlines()
         data = "\n".join([d for d in data if not d.strip().startswith("%")])
         sections = [l.split() for l in data.strip().split('# ') if not l.strip().startswith("%")]
-        print(sections)
         sections = {k[0]: k[1:] for k in sections if len(k) > 1}
         self.tileset = {}
         for i in range(0, len(sections['Tileset']), 2):

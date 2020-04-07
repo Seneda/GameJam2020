@@ -10,12 +10,13 @@ class Character():
         self.name = name
 
         self.speed = [0, 0]  # speed in x,y notation (right and up)
+        self.movement = [0, 0]
         self.rect = pygame.Rect(*pos, 32, 32)
         self.collision_rect = pygame.Rect(*pos, 24, 32)
         self.jump_timer = 1000
         self.run_acceleration = 500*60
         self.jump_acceleration = 16 * 50 * 2 * 2
-        self.gravity = 5 * 9.81 * 16  # 16 pixels = 1m
+        self.gravity = 8 * 9.81 * 16  # 16 pixels = 1m
 
         self.animation_timer = 0
         self.animation_type = "idle_left"
@@ -60,6 +61,7 @@ class Character():
         self.speed[1] = val[3]
 
     def updatePos(self, time_passed_s, collision_objects, key_state=None):
+        self.last_pos = self.pos
         if time_passed_s == 0:
             return
         self.animation_timer += time_passed_s
@@ -93,11 +95,14 @@ class Character():
             self.x = self.x + float(self.speed[0]) * time_passed_s
             self.detect_collisions(collision_objects)
 
+        self.movement = [self.pos[i] - self.last_pos[i] for i in range(len(self.pos))]
+
+    def update_animation_type(self):
         last_animation = self.animation_type
 
-        if self.speed[0] > 0:
+        if self.movement[0] > 0:
             self.animation_type = "walk_right"
-        elif self.speed[0] < 0:
+        elif self.movement[0] < 0:
             self.animation_type = "walk_left"
         else:
             if 'left' in self.animation_type:
@@ -105,10 +110,10 @@ class Character():
             else:
                 self.animation_type = 'idle_right'
 
-        if abs(self.speed[1]) > 10:
-            if self.speed[0] > 0:
+        if abs(self.movement[1]) > 0:
+            if self.movement[0] > 0:
                 self.animation_type = "jump_right"
-            elif self.speed[0] < 0:
+            elif self.movement[0] < 0:
                 self.animation_type = "jump_left"
             else:
                 if 'left' in self.animation_type:
@@ -118,6 +123,11 @@ class Character():
 
         if self.animation_type != last_animation:
             self.animation_timer = 0
+
+    @property
+    def animation_frame(self):
+        animation_speed = sprite_speeds[self.name][self.animation_type]
+        return sprites[self.name][self.animation_type][int(self.animation_timer * animation_speed) % len(sprites[self.name][self.animation_type])]
 
     def detect_collisions(self, collision_objects):
         #     self.collision_rect = self.rect.copy()
@@ -144,6 +154,7 @@ class Character():
                     break
                 if self.collision_rect.centerx < collision.left:
                     self.speed[0] = 0
+                    print("Left Collision", self.speed)
                     self.collision_rect.right = collision.left
                     self.rect.center = self.collision_rect.center
                     self.collisions = sorted([r for r in collision_objects if self.collision_rect.colliderect(r)],
@@ -181,8 +192,9 @@ class Character():
         #              (self.rect.x - scroll[0], self.rect.y - scroll[1] - 10))
         # display.blit(pygame.font.SysFont('Arial', 10).render('{:.1f}'.format(self.speed[1]), True, (0, 0, 0)),
         #              (self.rect.x - scroll[0] + 24, self.rect.y - scroll[1] - 10))
-        display.blit(sprites[self.name][self.animation_type][
-                         int(self.animation_timer * sprite_speeds[self.name][self.animation_type]) % len(sprites[self.name][self.animation_type])],
+
+        self.update_animation_type()
+        display.blit(self.animation_frame,
                      (self.x - scroll[0], self.y - scroll[1]))
 
         if minimap is not None:
