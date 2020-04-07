@@ -21,7 +21,6 @@ def send():  # event is passed by binders.
     client_socket.send(bytes(msg, "utf8"))
     if msg == "{quit}":
         client_socket.close()
-        top.quit()
 
 
 def on_closing(event=None):
