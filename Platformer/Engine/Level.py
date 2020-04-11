@@ -9,7 +9,7 @@ import pygame
 import pygame.locals
 from time import time, sleep
 
-from Engine.Character import Character
+from Engine.Character import NormalCharacter, DoubleJumpCharacter, load_character
 from Engine.Control import KeyState, ProcessPygameEvents
 from Engine.Map import Map
 from Engine.Sprites import LoadSprites
@@ -20,9 +20,9 @@ class Level(object):
     def __init__(self, map_name, player_character_name, player_start_pos, npc_names=(), npc_start_positions=(),
                  window_size=(800, 400), magnification=2, player_state_queue=None, npc_state_queues=None,
                  enable_minimap=True, server=False, host='localhost', port=12345):
-        self.player = Character(player_character_name, player_start_pos)
+        self.player = load_character(player_character_name, player_start_pos)
         # print("Player: ", self.player)
-        self.npcs = [Character(npc_names[i], npc_start_positions[i]) for i in range(len(npc_names))]
+        self.npcs = [load_character(npc_names[i], npc_start_positions[i]) for i in range(len(npc_names))]
         # print("NPCs : ", self.npcs)
         self.player_state_queues = player_state_queue
         self.npc_state_queues = npc_state_queues
@@ -47,7 +47,10 @@ class Level(object):
                 sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
                 sock.bind(('localhost', self.port))
                 sock.listen(5)
+                print("Waiting for remote connections...")
+                t0 = time()
                 sock, client_address = sock.accept()
+                print("Connected after {}s", time()-t0)
                 # sock.setblocking(False)
                 # sock.setblocking(False)
                 print("Connection from", client_address)
@@ -57,33 +60,35 @@ class Level(object):
                 send_thread = Thread(target=self.run_send_message_loop, args=(kill_signal,))
                 recv_thread.start()
                 send_thread.start()
-                recv_thread.join()
-                send_thread.join()
 
         except Exception as e:
             print("Could not connect to a remote player, continuing in single player mode")
             print(e)
 
     def run_client_thread(self, kill_signal):
-        print("Starting network loop as {}".format("server" if self.server else "client"))
+        try:
+            print("Starting network loop as {}".format("server" if self.server else "client"))
 
-        ADDR = (self.host_ip, self.port)
-        self.sockets = []
-        for q in self.npcs:
-            sock = socket(AF_INET, SOCK_STREAM)
-            # sock.setblocking(False)
-            self.sockets.append(socket(AF_INET, SOCK_STREAM))
-        for sock in self.sockets:
-            sock.connect(ADDR)
-            # sock.setblocking(False)
-            print("Client Connected")
+            ADDR = (self.host_ip, self.port)
+            self.sockets = []
+            for q in self.npcs:
+                sock = socket(AF_INET, SOCK_STREAM)
+                # sock.setblocking(False)
+                self.sockets.append(socket(AF_INET, SOCK_STREAM))
+            for sock in self.sockets:
+                sock.connect(ADDR)
+                # sock.setblocking(False)
+                print("Client Connected")
 
-        recv_thread = Thread(target=self.run_recv_message_loop, args=(kill_signal,))
-        send_thread = Thread(target=self.run_send_message_loop, args=(kill_signal,))
-        recv_thread.start()
-        send_thread.start()
-        recv_thread.join()
-        send_thread.join()
+            recv_thread = Thread(target=self.run_recv_message_loop, args=(kill_signal,))
+            send_thread = Thread(target=self.run_send_message_loop, args=(kill_signal,))
+            recv_thread.start()
+            send_thread.start()
+
+        except Exception as e:
+            print("Could not connect to a remote player, continuing in single player mode")
+            print(e)
+
 
     def run_send_message_loop(self, kill_signal):
         while not kill_signal.is_set():
@@ -123,11 +128,10 @@ class Level(object):
         pygame.init()
         pygame.event.set_allowed([pygame.locals.QUIT, pygame.locals.KEYDOWN, pygame.locals.KEYUP])
         if self.server:
-            thread = Thread(target=self.run_server_thread, args=(kill_signal,), daemon=True)
+            self.run_server_thread(kill_signal)
         else:
-            thread = Thread(target=self.run_client_thread, args=(kill_signal,), daemon=True)
+            self.run_client_thread(kill_signal)
 
-        thread.start()
         flags =  pygame.locals.DOUBLEBUF
         self.screen = pygame.display.set_mode(self.window_size, flags, 32)
         if self.magnification != 1:

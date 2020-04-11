@@ -1,22 +1,19 @@
 import math
+from abc import ABC, abstractmethod
 
 import pygame
 
 from Engine.Sprites import sprites, sprite_speeds
 
-
-class Character():
-    def __init__(self, name, pos):
+class CharacterBase(ABC):
+    def __init__(self, name, start_pos):
         self.name = name
 
         self.speed = [0, 0]  # speed in x,y notation (right and up)
         self.movement = [0, 0]
-        self.rect = pygame.Rect(*pos, 32, 32)
-        self.collision_rect = pygame.Rect(*pos, 24, 32)
-        self.jump_timer = 1000
-        self.run_acceleration = 500*60
-        self.jump_acceleration = 16 * 50 * 2 * 2
-        self.gravity = 8 * 9.81 * 16  # 16 pixels = 1m
+        self.rect = pygame.Rect(*start_pos, 32, 32)
+        self.last_pos = self.pos
+        self.collision_rect = pygame.Rect(*start_pos, 24, 32)
 
         self.animation_timer = 0
         self.animation_type = "idle_left"
@@ -42,14 +39,14 @@ class Character():
 
     @property
     def pos(self):
-        return (self.x, self.y)
+        return self.x, self.y
 
     @pos.setter
     def pos(self, val):
         self.x = val[0]
         self.y = val[1]\
 
-    @property
+    @ property
     def state(self):
         return (*self.pos, *self.speed)
 
@@ -60,13 +57,59 @@ class Character():
         self.speed[0] = val[2]
         self.speed[1] = val[3]
 
+    @property
+    def animation_frame(self):
+        animation_speed = sprite_speeds[self.name][self.animation_type]
+        return sprites[self.name][self.animation_type][
+            int(self.animation_timer * animation_speed) % len(sprites[self.name][self.animation_type])]
+
+    def updateDraw(self, display, minimap, scroll):
+        # display.blit(pygame.font.SysFont('Arial', 10).render('{:.1f}'.format(self.speed[0]), True, (0, 0, 0)),
+        #              (self.rect.x - scroll[0], self.rect.y - scroll[1] - 10))
+        # display.blit(pygame.font.SysFont('Arial', 10).render('{:.1f}'.format(self.speed[1]), True, (0, 0, 0)),
+        #              (self.rect.x - scroll[0] + 24, self.rect.y - scroll[1] - 10))
+
+        self.updateAnimationType()
+        display.blit(self.animation_frame,
+           (self.x - scroll[0], self.y - scroll[1]))
+
+        if minimap is not None:
+            if self.collisions:
+                pygame.draw.rect(minimap, (255, 0, 0), self.rect)
+                # minimap.blit(pygame.font.SysFont('Arial', 20).render('{}'.format(len(self.collisions)), True, (0, 0, 0)),
+                #              (self.rect.centerx - 4, self.rect.centery - 10))
+            else:
+                pygame.draw.rect(minimap, (0, 255, 0), self.rect)
+                pygame.draw.rect(minimap, (0, 0, 255), self.collision_rect)
+
+    @abstractmethod
+    def detectCollisions(self, collidable_objects):
+        pass
+
+    @abstractmethod
+    def updateAnimationType(self):
+        pass
+
+
+
+def load_character(name, pos):
+    characters = {"Batman": DoubleJumpCharacter,
+                  "Scuttlefish": FlyingCharacter}
+
+    return characters.get(name, NormalCharacter)(name, pos)
+
+class NormalCharacter(CharacterBase):
+    def __init__(self, name, start_pos):
+        super().__init__(name, start_pos)
+        self.run_acceleration = 3000
+        self.jump_speed = 6 * 32
+        self.gravity = 9.81 * 32
+
     def updatePos(self, time_passed_s, collision_objects, key_state=None):
         self.last_pos = self.pos
         if time_passed_s == 0:
             return
         self.animation_timer += time_passed_s
-        self.jump_timer += time_passed_s
-        self.speed[1] += self.gravity * time_passed_s
         if key_state is not None:
             self.speed[0] = 0
             if key_state.right:
@@ -75,10 +118,9 @@ class Character():
                 self.speed[0] -= self.run_acceleration * time_passed_s
             if key_state.up:
                 # limits how long you can hold jump for and keep accelerating upwards, but allows you to do a small jump by tapping and hold for up to 0.2s for a longer jump
-                if (self.jump_timer > 0.5) or (self.jump_timer < 0.2):
-                    self.speed[1] -= self.jump_acceleration * time_passed_s
-                    if self.jump_timer > 0.5:
-                        self.jump_timer = 0
+                if (self.speed[1] == 0):
+                    self.speed[1] -= self.jump_speed
+        self.speed[1] += self.gravity * time_passed_s
 
         MAXSPEED = 8 / time_passed_s
 
@@ -86,18 +128,18 @@ class Character():
         self.speed[1] = min(MAXSPEED, max(-MAXSPEED, self.speed[1]))
         if abs(self.speed[0]) > abs(self.speed[1]):
             self.x = self.x + float(self.speed[0]) * time_passed_s
-            self.detect_collisions(collision_objects)
+            self.detectCollisions(collision_objects)
             self.y = self.y + float(self.speed[1]) * time_passed_s
-            self.detect_collisions(collision_objects)
+            self.detectCollisions(collision_objects)
         else:
             self.y = self.y + float(self.speed[1]) * time_passed_s
-            self.detect_collisions(collision_objects)
+            self.detectCollisions(collision_objects)
             self.x = self.x + float(self.speed[0]) * time_passed_s
-            self.detect_collisions(collision_objects)
+            self.detectCollisions(collision_objects)
 
         self.movement = [self.pos[i] - self.last_pos[i] for i in range(len(self.pos))]
 
-    def update_animation_type(self):
+    def updateAnimationType(self):
         last_animation = self.animation_type
 
         if self.movement[0] > 0:
@@ -110,7 +152,7 @@ class Character():
             else:
                 self.animation_type = 'idle_right'
 
-        if abs(self.movement[1]) > 0:
+        if abs(self.speed[1]) > 0:
             if self.movement[0] > 0:
                 self.animation_type = "jump_right"
             elif self.movement[0] < 0:
@@ -121,20 +163,18 @@ class Character():
                 else:
                     self.animation_type = 'jump_right'
 
+        if self.name == "Batman":
+            print(self.name, self.animation_type, self.speed)
+
         if self.animation_type != last_animation:
             self.animation_timer = 0
 
-    @property
-    def animation_frame(self):
-        animation_speed = sprite_speeds[self.name][self.animation_type]
-        return sprites[self.name][self.animation_type][int(self.animation_timer * animation_speed) % len(sprites[self.name][self.animation_type])]
-
-    def detect_collisions(self, collision_objects):
+    def detectCollisions(self, collidable_objects):
         #     self.collision_rect = self.rect.copy()
         #     self.collision_rect.width = 24
         #     # self.collision_rect.width = 24
         #     self.collision_rect.center = self.rect.center
-        self.collisions = sorted([r for r in collision_objects if self.collision_rect.colliderect(r)],
+        self.collisions = sorted([r for r in collidable_objects if self.collision_rect.colliderect(r)],
                                  key=lambda x: math.hypot(x.centerx - self.collision_rect.centerx,
                                                           x.centery - self.collision_rect.centery))
         collision_counter = 0
@@ -148,7 +188,7 @@ class Character():
                     self.speed[1] = 0
                     self.collision_rect.bottom = collision.top
                     self.rect.center = self.collision_rect.center
-                    self.collisions = sorted([r for r in collision_objects if self.collision_rect.colliderect(r)],
+                    self.collisions = sorted([r for r in collidable_objects if self.collision_rect.colliderect(r)],
                                              key=lambda x: math.hypot(x.centerx - self.collision_rect.centerx,
                                                                       x.centery - self.collision_rect.centery))
                     break
@@ -156,7 +196,7 @@ class Character():
                     self.speed[0] = 0
                     self.collision_rect.right = collision.left
                     self.rect.center = self.collision_rect.center
-                    self.collisions = sorted([r for r in collision_objects if self.collision_rect.colliderect(r)],
+                    self.collisions = sorted([r for r in collidable_objects if self.collision_rect.colliderect(r)],
                                              key=lambda x: math.hypot(x.centerx - self.collision_rect.centerx,
                                                                       x.centery - self.collision_rect.centery))
                     break
@@ -164,7 +204,7 @@ class Character():
                     self.speed[0] = 0
                     self.collision_rect.left = collision.right
                     self.rect.center = self.collision_rect.center
-                    self.collisions = sorted([r for r in collision_objects if self.collision_rect.colliderect(r)],
+                    self.collisions = sorted([r for r in collidable_objects if self.collision_rect.colliderect(r)],
                                              key=lambda x: math.hypot(x.centerx - self.collision_rect.centerx,
                                                                       x.centery - self.collision_rect.centery))
                     break
@@ -172,7 +212,7 @@ class Character():
                     self.speed[1] = 0
                     self.collision_rect.top = collision.bottom
                     self.rect.center = self.collision_rect.center
-                    self.collisions = sorted([r for r in collision_objects if self.collision_rect.colliderect(r)],
+                    self.collisions = sorted([r for r in collidable_objects if self.collision_rect.colliderect(r)],
                                              key=lambda x: math.hypot(x.centerx - self.collision_rect.centerx,
                                                                       x.centery - self.collision_rect.centery))
                     break
@@ -186,21 +226,113 @@ class Character():
                 print("Collision Iteration : {}".format(collision_counter))
                 break
 
-    def updateDraw(self, display, minimap, scroll):
-        # display.blit(pygame.font.SysFont('Arial', 10).render('{:.1f}'.format(self.speed[0]), True, (0, 0, 0)),
-        #              (self.rect.x - scroll[0], self.rect.y - scroll[1] - 10))
-        # display.blit(pygame.font.SysFont('Arial', 10).render('{:.1f}'.format(self.speed[1]), True, (0, 0, 0)),
-        #              (self.rect.x - scroll[0] + 24, self.rect.y - scroll[1] - 10))
+class DoubleJumpCharacter(NormalCharacter):
 
-        self.update_animation_type()
-        display.blit(self.animation_frame,
-                     (self.x - scroll[0], self.y - scroll[1]))
+    def updatePos(self, time_passed_s, collision_objects, key_state=None):
+        self.last_pos = self.pos
+        if time_passed_s == 0:
+            return
+        self.animation_timer += time_passed_s
+        if key_state is not None:
+            self.speed[0] = 0
+            if key_state.right:
+                self.speed[0] += self.run_acceleration * time_passed_s
+            if key_state.left:
+                self.speed[0] -= self.run_acceleration * time_passed_s
+            if key_state.up:
+                # limits how long you can hold jump for and keep accelerating upwards, but allows you to do a small jump by tapping and hold for up to 0.2s for a longer jump
+                if (abs(self.speed[1]) < 1):
+                    self.speed[1] -= self.jump_speed
+        self.speed[1] += self.gravity * time_passed_s
 
-        if minimap is not None:
-            if self.collisions:
-                pygame.draw.rect(minimap, (255, 0, 0), self.rect)
-                # minimap.blit(pygame.font.SysFont('Arial', 20).render('{}'.format(len(self.collisions)), True, (0, 0, 0)),
-                #              (self.rect.centerx - 4, self.rect.centery - 10))
-            else:
-                pygame.draw.rect(minimap, (0, 255, 0), self.rect)
-                pygame.draw.rect(minimap, (0, 0, 255), self.collision_rect)
+        MAXSPEED = 8 / time_passed_s
+
+        self.speed[0] = min(MAXSPEED, max(-MAXSPEED, self.speed[0]))
+        self.speed[1] = min(MAXSPEED, max(-MAXSPEED, self.speed[1]))
+        if abs(self.speed[0]) > abs(self.speed[1]):
+            self.x = self.x + float(self.speed[0]) * time_passed_s
+            self.detectCollisions(collision_objects)
+            self.y = self.y + float(self.speed[1]) * time_passed_s
+            self.detectCollisions(collision_objects)
+        else:
+            self.y = self.y + float(self.speed[1]) * time_passed_s
+            self.detectCollisions(collision_objects)
+            self.x = self.x + float(self.speed[0]) * time_passed_s
+            self.detectCollisions(collision_objects)
+
+        self.movement = [self.pos[i] - self.last_pos[i] for i in range(len(self.pos))]
+
+class SliderCharacter(NormalCharacter):
+
+    def updatePos(self, time_passed_s, collision_objects, key_state=None):
+        self.last_pos = self.pos
+        if time_passed_s == 0:
+            return
+        self.animation_timer += time_passed_s
+        if key_state is not None:
+            # self.speed[0] = 0
+            if key_state.right:
+                self.speed[0] += self.run_acceleration * time_passed_s
+            if key_state.left:
+                self.speed[0] -= self.run_acceleration * time_passed_s
+            if key_state.up:
+                # limits how long you can hold jump for and keep accelerating upwards, but allows you to do a small jump by tapping and hold for up to 0.2s for a longer jump
+                if (self.speed[1] == 0):
+                    self.speed[1] -= self.jump_speed
+        self.speed[1] += self.gravity * time_passed_s
+
+        MAXSPEED = 8 / time_passed_s
+
+        self.speed[0] = min(MAXSPEED, max(-MAXSPEED, self.speed[0]))
+        self.speed[1] = min(MAXSPEED, max(-MAXSPEED, self.speed[1]))
+        if abs(self.speed[0]) > abs(self.speed[1]):
+            self.x = self.x + float(self.speed[0]) * time_passed_s
+            self.detectCollisions(collision_objects)
+            self.y = self.y + float(self.speed[1]) * time_passed_s
+            self.detectCollisions(collision_objects)
+        else:
+            self.y = self.y + float(self.speed[1]) * time_passed_s
+            self.detectCollisions(collision_objects)
+            self.x = self.x + float(self.speed[0]) * time_passed_s
+            self.detectCollisions(collision_objects)
+
+        self.movement = [self.pos[i] - self.last_pos[i] for i in range(len(self.pos))]
+
+class FlyingCharacter(NormalCharacter):
+
+    def __init__(self, name, start_pos):
+        super().__init__(name, start_pos)
+        self.flying_acceleration = 100
+
+    def updatePos(self, time_passed_s, collision_objects, key_state=None):
+        self.last_pos = self.pos
+        if time_passed_s == 0:
+            return
+        self.animation_timer += time_passed_s
+        if key_state is not None:
+            if key_state.right:
+                self.speed[0] += self.flying_acceleration * time_passed_s
+            if key_state.left:
+                self.speed[0] -= self.flying_acceleration * time_passed_s
+            if key_state.up:
+                self.speed[1] -= self.flying_acceleration * time_passed_s
+            if key_state.down:
+                self.speed[1] += self.flying_acceleration * time_passed_s
+        # self.speed[1] += self.gravity * time_passed_s
+
+        MAXSPEED = 8 / time_passed_s
+
+        self.speed[0] = min(MAXSPEED, max(-MAXSPEED, self.speed[0]))
+        self.speed[1] = min(MAXSPEED, max(-MAXSPEED, self.speed[1]))
+        if abs(self.speed[0]) > abs(self.speed[1]):
+            self.x = self.x + float(self.speed[0]) * time_passed_s
+            self.detectCollisions(collision_objects)
+            self.y = self.y + float(self.speed[1]) * time_passed_s
+            self.detectCollisions(collision_objects)
+        else:
+            self.y = self.y + float(self.speed[1]) * time_passed_s
+            self.detectCollisions(collision_objects)
+            self.x = self.x + float(self.speed[0]) * time_passed_s
+            self.detectCollisions(collision_objects)
+
+        self.movement = [self.pos[i] - self.last_pos[i] for i in range(len(self.pos))]

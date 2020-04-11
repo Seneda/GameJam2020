@@ -12,7 +12,7 @@ def LoadSprites():
         for sprite_name in sprite_dirs:
             print("Loading {}".format(sprite_name))
             sprites.setdefault(sprite_name, {})
-            sprite_speeds[sprite_name] = {"idle_left": 8, "idle_right": 8, "jump_left" : 48, "jump_right": 48, "walk_left": 8, "walk_right": 8, }
+            sprite_speeds[sprite_name] = {"idle_left": 8, "idle_right": 8, "jump_left" : 24, "jump_right": 24, "walk_left": 8, "walk_right": 8, }
             for _, _, animation_files in os.walk(os.path.join(SPRITES_DIR, sprite_name)):
                 for animation_name in animation_files:
                     try:

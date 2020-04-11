@@ -30,7 +30,11 @@ parser.add_argument("--host-ip", help="The ip address on which the connections w
                                       "For server, use the localhost, for the client use the public ip of the server.",
                     default='localhost', )
 parser.add_argument("--fps", help="The target framerate to run at",
-                    default=40, type=int)
+                    default=30, type=int)
+parser.add_argument("--char", help="The character to play as",
+                    default="Batman", type=str)
+parser.add_argument("--npc", help="The character to play as",
+                    default="Scuttlefish", type=str)
 parser.add_argument("--port", help="The ip address on which the connections will be made. "
                                       "For server, use the localhost, for the client use the public ip of the server.",
                     default=12345, type=int)
@@ -40,9 +44,9 @@ def main():
     args = parser.parse_args()
     level = Level(
         map_name="test_map_new_format",
-        player_character_name="Treeman" if args.server else "Batman",
+        player_character_name=args.char,
         player_start_pos=(20 + 32 if args.server else 64, 80),
-        npc_names=["Batman" if args.server else "Treeman"],
+        npc_names=[args.npc],
         npc_start_positions=[(20 + 64 if args.server else 32, 80)],
         window_size=(800, 400),
         player_state_queue=[Queue()],
