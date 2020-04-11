@@ -106,31 +106,43 @@ def load_character(name, pos):
 class NormalCharacter(CharacterBase):
     def __init__(self, name, start_pos):
         super().__init__(name, start_pos)
-        self.run_acceleration = 3000
+        self.run_acceleration = 2000 # a quick boost of acceleration
+        self.run_speed = 250 # max speed, previous: 250
         self.jump_speed = 6 * 32
-        self.gravity = 9.81 * 32
+        self.keyheld_gravity = 9.81 * 40 # gravity if moving downwards
+        self.normal_gravity = 9.81 * 100 # gravity if moving upwards
 
     def updateState(self, time_passed_s, collision_objects, key_state=None):
         self.last_pos = self.pos
         if time_passed_s == 0:
             return
         self.animation_timer += time_passed_s
+        gravity = self.normal_gravity
         if key_state is not None:
-            self.speed[0] = 0
             if key_state.right:
                 self.speed[0] += self.run_acceleration * time_passed_s
-            if key_state.left:
+                self.speed[0] = min(self.run_speed,self.speed[0])
+            elif key_state.left:
                 self.speed[0] -= self.run_acceleration * time_passed_s
-            if key_state.up:
+                self.speed[0] = max(-self.run_speed,self.speed[0])
+            else: 
+                self.speed[0] = 0
+            if key_state.up_K_DOWN:
+                gravity = self.keyheld_gravity
                 # limits how long you can hold jump for and keep accelerating upwards, but allows you to do a small jump by tapping and hold for up to 0.2s for a longer jump
                 if (self.speed[1] == 0):
                     self.speed[1] -= self.jump_speed
-        self.speed[1] += self.gravity * time_passed_s
+            if key_state.up:
+                gravity = self.keyheld_gravity
 
-        MAXSPEED = 8 / time_passed_s
+        self.speed[1] += gravity * time_passed_s
 
-        self.speed[0] = min(MAXSPEED, max(-MAXSPEED, self.speed[0]))
-        self.speed[1] = min(MAXSPEED, max(-MAXSPEED, self.speed[1]))
+# ToDo: probably should know if this or something else is capping the speed (otherwise our speed depends on the framerate)
+        # MAXSPEED = 8 / time_passed_s
+
+        # self.speed[0] = min(MAXSPEED, max(-MAXSPEED, self.speed[0]))
+        # self.speed[1] = min(MAXSPEED, max(-MAXSPEED, self.speed[1]))
+
         if abs(self.speed[0]) > abs(self.speed[1]):
             self.x = self.x + float(self.speed[0]) * time_passed_s
             self.detectCollisions(collision_objects)
@@ -247,10 +259,12 @@ class DoubleJumpCharacter(NormalCharacter):
             if key_state.left:
                 self.speed[0] -= self.run_acceleration * time_passed_s
             if key_state.up:
+                gravity = keyheld_gravity
                 # limits how long you can hold jump for and keep accelerating upwards, but allows you to do a small jump by tapping and hold for up to 0.2s for a longer jump
                 if (abs(self.speed[1]) < 1):
                     self.speed[1] -= self.jump_speed
-        self.speed[1] += self.gravity * time_passed_s
+
+        self.speed[1] += gravity * time_passed_s
 
         MAXSPEED = 8 / time_passed_s
 
@@ -277,6 +291,7 @@ class SliderCharacter(NormalCharacter):
         if time_passed_s == 0:
             return
         self.animation_timer += time_passed_s
+        gravity = self.normal_gravity
         if key_state is not None:
             # self.speed[0] = 0
             if key_state.right:
@@ -284,10 +299,12 @@ class SliderCharacter(NormalCharacter):
             if key_state.left:
                 self.speed[0] -= self.run_acceleration * time_passed_s
             if key_state.up:
+                gravity = keyheld_gravity
                 # limits how long you can hold jump for and keep accelerating upwards, but allows you to do a small jump by tapping and hold for up to 0.2s for a longer jump
                 if (self.speed[1] == 0):
                     self.speed[1] -= self.jump_speed
-        self.speed[1] += self.gravity * time_passed_s
+
+        self.speed[1] += gravity * time_passed_s
 
         MAXSPEED = 8 / time_passed_s
 
@@ -330,7 +347,7 @@ class FlyingCharacter(NormalCharacter):
             if key_state.down:
                 self.speed[1] += self.flying_acceleration * time_passed_s
 
-        self.speed[1] += self.gravity * time_passed_s
+        self.speed[1] += gravity * time_passed_s
 
         MAXSPEED = 8 / time_passed_s
 
