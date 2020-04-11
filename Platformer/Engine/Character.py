@@ -132,7 +132,7 @@ class NormalCharacter(CharacterBase):
                 # limits how long you can hold jump for and keep accelerating upwards, but allows you to do a small jump by tapping and hold for up to 0.2s for a longer jump
                 if (self.speed[1] == 0):
                     self.speed[1] -= self.jump_speed
-            if key_state.up:
+            if ((key_state.up)and(self.speed[1]<0)): #if holding up key and moving up
                 gravity = self.keyheld_gravity
 
         self.speed[1] += gravity * time_passed_s
