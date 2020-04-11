@@ -330,7 +330,7 @@ class FlyingCharacter(NormalCharacter):
             if key_state.down:
                 self.speed[1] += self.flying_acceleration * time_passed_s
 
-        # self.speed[1] += self.gravity * time_passed_s
+        self.speed[1] += self.gravity * time_passed_s
 
         MAXSPEED = 8 / time_passed_s
 
@@ -383,7 +383,7 @@ class FlyingCharacter(NormalCharacter):
                         self.animation_type = 'fly_left'
                     else:
                         self.animation_type = 'fly_right'
-        if 'fly' not in self.animation_type:
-            self.jump_timer = 0
+        # if 'fly' not in self.animation_type:
+        #     self.jump_timer = 0
         if self.animation_type != last_animation:
             self.animation_timer = 0
