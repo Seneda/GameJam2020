@@ -45,7 +45,7 @@ class Level(object):
                 sock = socket(AF_INET, SOCK_STREAM)
                 sock.settimeout(60)
                 sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-                sock.bind(('localhost', self.port))
+                sock.bind((self.host_ip, self.port))
                 sock.listen(5)
                 print("Waiting for remote connections...")
                 t0 = time()

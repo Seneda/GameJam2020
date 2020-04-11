@@ -37,7 +37,7 @@ parser.add_argument("--npc", help="The character to play as",
                     default="Scuttlefish", type=str)
 parser.add_argument("--port", help="The ip address on which the connections will be made. "
                                       "For server, use the localhost, for the client use the public ip of the server.",
-                    default=12345, type=int)
+                    default=33012, type=int)
 
 def main():
 
