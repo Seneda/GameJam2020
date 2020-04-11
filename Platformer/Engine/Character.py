@@ -5,6 +5,7 @@ import pygame
 
 from Engine.Sprites import sprites, sprite_speeds
 
+
 class CharacterBase(ABC):
     def __init__(self, name, start_pos):
         self.name = name
@@ -44,9 +45,9 @@ class CharacterBase(ABC):
     @pos.setter
     def pos(self, val):
         self.x = val[0]
-        self.y = val[1]\
+        self.y = val[1]
 
-    @ property
+    @property
     def state(self):
         return (*self.pos, *self.speed)
 
@@ -71,7 +72,7 @@ class CharacterBase(ABC):
 
         self.updateAnimationType()
         display.blit(self.animation_frame,
-           (self.x - scroll[0], self.y - scroll[1]))
+                     (self.x - scroll[0], self.y - scroll[1]))
 
         if minimap is not None:
             if self.collisions:
@@ -83,6 +84,10 @@ class CharacterBase(ABC):
                 pygame.draw.rect(minimap, (0, 0, 255), self.collision_rect)
 
     @abstractmethod
+    def updateState(self, time_passed_s, collision_objects, key_state=None):
+        pass
+
+    @abstractmethod
     def detectCollisions(self, collidable_objects):
         pass
 
@@ -91,12 +96,12 @@ class CharacterBase(ABC):
         pass
 
 
-
 def load_character(name, pos):
-    characters = {"Batman": DoubleJumpCharacter,
-                  "Scuttlefish": FlyingCharacter}
+    characters = {"Batman": FlyingCharacter,
+                  "Scuttlefish": SliderCharacter}
 
     return characters.get(name, NormalCharacter)(name, pos)
+
 
 class NormalCharacter(CharacterBase):
     def __init__(self, name, start_pos):
@@ -105,7 +110,7 @@ class NormalCharacter(CharacterBase):
         self.jump_speed = 6 * 32
         self.gravity = 9.81 * 32
 
-    def updatePos(self, time_passed_s, collision_objects, key_state=None):
+    def updateState(self, time_passed_s, collision_objects, key_state=None):
         self.last_pos = self.pos
         if time_passed_s == 0:
             return
@@ -226,13 +231,15 @@ class NormalCharacter(CharacterBase):
                 print("Collision Iteration : {}".format(collision_counter))
                 break
 
+
 class DoubleJumpCharacter(NormalCharacter):
 
-    def updatePos(self, time_passed_s, collision_objects, key_state=None):
+    def updateState(self, time_passed_s, collision_objects, key_state=None):
         self.last_pos = self.pos
         if time_passed_s == 0:
             return
         self.animation_timer += time_passed_s
+        self.jump_timer += time_passed_s
         if key_state is not None:
             self.speed[0] = 0
             if key_state.right:
@@ -262,9 +269,10 @@ class DoubleJumpCharacter(NormalCharacter):
 
         self.movement = [self.pos[i] - self.last_pos[i] for i in range(len(self.pos))]
 
+
 class SliderCharacter(NormalCharacter):
 
-    def updatePos(self, time_passed_s, collision_objects, key_state=None):
+    def updateState(self, time_passed_s, collision_objects, key_state=None):
         self.last_pos = self.pos
         if time_passed_s == 0:
             return
@@ -298,17 +306,20 @@ class SliderCharacter(NormalCharacter):
 
         self.movement = [self.pos[i] - self.last_pos[i] for i in range(len(self.pos))]
 
+
 class FlyingCharacter(NormalCharacter):
 
     def __init__(self, name, start_pos):
         super().__init__(name, start_pos)
         self.flying_acceleration = 100
+        self.jump_timer = 0
 
-    def updatePos(self, time_passed_s, collision_objects, key_state=None):
+    def updateState(self, time_passed_s, collision_objects, key_state=None):
         self.last_pos = self.pos
         if time_passed_s == 0:
             return
         self.animation_timer += time_passed_s
+        self.jump_timer += time_passed_s
         if key_state is not None:
             if key_state.right:
                 self.speed[0] += self.flying_acceleration * time_passed_s
@@ -318,6 +329,7 @@ class FlyingCharacter(NormalCharacter):
                 self.speed[1] -= self.flying_acceleration * time_passed_s
             if key_state.down:
                 self.speed[1] += self.flying_acceleration * time_passed_s
+
         # self.speed[1] += self.gravity * time_passed_s
 
         MAXSPEED = 8 / time_passed_s
@@ -336,3 +348,42 @@ class FlyingCharacter(NormalCharacter):
             self.detectCollisions(collision_objects)
 
         self.movement = [self.pos[i] - self.last_pos[i] for i in range(len(self.pos))]
+
+    def updateAnimationType(self):
+        last_animation = self.animation_type
+
+        if self.movement[0] > 0:
+            self.animation_type = "walk_right"
+        elif self.movement[0] < 0:
+            self.animation_type = "walk_left"
+        else:
+            if 'left' in self.animation_type:
+                self.animation_type = 'idle_left'
+            else:
+                self.animation_type = 'idle_right'
+
+        if abs(self.speed[1]) > 0:
+            if self.jump_timer < 1.25:
+                if self.movement[0] > 0:
+                    self.animation_type = "jump_right"
+                elif self.movement[0] < 0:
+                    self.animation_type = "jump_left"
+                else:
+                    if 'left' in self.animation_type:
+                        self.animation_type = 'jump_left'
+                    else:
+                        self.animation_type = 'jump_right'
+            else:
+                if self.movement[0] > 0:
+                    self.animation_type = "fly_right"
+                elif self.movement[0] < 0:
+                    self.animation_type = "fly_left"
+                else:
+                    if 'left' in self.animation_type:
+                        self.animation_type = 'fly_left'
+                    else:
+                        self.animation_type = 'fly_right'
+        if 'fly' not in self.animation_type:
+            self.jump_timer = 0
+        if self.animation_type != last_animation:
+            self.animation_timer = 0

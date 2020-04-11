@@ -206,13 +206,13 @@ class Level(object):
             y_limits = [self.player.y-height_to_filter,self.player.y+height_to_filter]
             relevant_map_rects = [rect for rect in map_rects if ((rect.x < x_limits[1])and(rect.x > x_limits[0])and(rect.y < y_limits[1])and(rect.y > y_limits[0]))]
 
-            self.player.updatePos(t_step - t0, relevant_map_rects, arrow_key_state)
+            self.player.updateState(t_step - t0, relevant_map_rects, arrow_key_state)
             
             for npc in self.npcs:
                 x_limits = [npc.x-width_to_filter,npc.x+width_to_filter]
                 y_limits = [npc.y-height_to_filter,npc.y+height_to_filter]
                 relevant_map_rects = [rect for rect in map_rects if ((rect.x < x_limits[1])and(rect.x > x_limits[0])and(rect.y < y_limits[1])and(rect.y > y_limits[0]))]
-                npc.updatePos(t_step - t0, relevant_map_rects, None)
+                npc.updateState(t_step - t0, relevant_map_rects, None)
         
             if random() >= 0.0:
                 if (frame_count % 2) == 0:
