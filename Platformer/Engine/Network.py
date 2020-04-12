@@ -102,14 +102,14 @@ def run_game_server(kill_signal, ip, port):
 
     send_queue = Queue()
     for conn in remote_connections:
-        t = Thread(target=listen_to_player, args=(conn, send_queue))
+        t = Thread(name="listen to player {}".format(conn.name), target=listen_to_player, args=(conn, send_queue))
         t.start()
 
     send_messages(remote_connections, send_queue)
 
 
 def run_server_thread(kill_signal, ip, port):
-    t = Thread(target=run_game_server, args=(kill_signal, ip, port), daemon=True)
+    t = Thread(name="run server", target=run_game_server, args=(kill_signal, ip, port), daemon=True)
     t.start()
 
 
@@ -126,8 +126,8 @@ def run_client_thread(kill_signal, game_info, ip, port):
     game_info = sock_recv_packet(sock)
     remote_connections = [RemotePlayerConnection(socket=sock, char_name=player['Character']) for player in game_info['players']]
 
-    recv_thread = Thread(target=run_recv_message_loop, args=(kill_signal, remote_connections))
-    send_thread = Thread(target=run_send_message_loop, args=(kill_signal, remote_connections))
+    recv_thread = Thread(name="Client RECV loop", target=run_recv_message_loop, args=(kill_signal, remote_connections))
+    send_thread = Thread(name="Client SEND loop", target=run_send_message_loop, args=(kill_signal, remote_connections))
     recv_thread.start()
     send_thread.start()
     return remote_connections
