@@ -7,11 +7,11 @@ A platformer with online multiplayer!
 
 ## TODO
 
-- Update collisions so doesn't do weird things jumping into the blocks from the side
+- [ ] Update collisions so doesn't do weird things jumping into the blocks from the side
 
-- Put in the character transformations
+- [ ] Put in the character transformations
 
-- 4-player multiplayer
+- [x] 4-player multiplayer
 
-- Animations synced up with speed of movement
+- [ ] Animations synced up with speed of movement
 
