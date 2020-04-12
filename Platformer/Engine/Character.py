@@ -97,8 +97,7 @@ class CharacterBase(ABC):
 
 
 def load_character(name, pos):
-    characters = {"Batman": FlyingCharacter,
-                  "Scuttlefish": SliderCharacter}
+    characters = {}
 
     return characters.get(name, NormalCharacter)(name, pos)
 
@@ -138,10 +137,10 @@ class NormalCharacter(CharacterBase):
         self.speed[1] += gravity * time_passed_s
 
 # ToDo: probably should know if this or something else is capping the speed (otherwise our speed depends on the framerate)
-        # MAXSPEED = 8 / time_passed_s
+        MAXSPEED = 8 / time_passed_s
 
-        # self.speed[0] = min(MAXSPEED, max(-MAXSPEED, self.speed[0]))
-        # self.speed[1] = min(MAXSPEED, max(-MAXSPEED, self.speed[1]))
+        self.speed[0] = min(MAXSPEED, max(-MAXSPEED, self.speed[0]))
+        self.speed[1] = min(MAXSPEED, max(-MAXSPEED, self.speed[1]))
 
         if abs(self.speed[0]) > abs(self.speed[1]):
             self.x = self.x + float(self.speed[0]) * time_passed_s
@@ -179,9 +178,6 @@ class NormalCharacter(CharacterBase):
                     self.animation_type = 'jump_left'
                 else:
                     self.animation_type = 'jump_right'
-
-        if self.name == "Batman":
-            print(self.name, self.animation_type, self.speed)
 
         if self.animation_type != last_animation:
             self.animation_timer = 0

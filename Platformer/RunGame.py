@@ -8,6 +8,7 @@ from queue import Empty
 
 import pygame.sprite
 
+
 from Engine.Level import Level
 
 
@@ -33,11 +34,12 @@ parser.add_argument("--fps", help="The target framerate to run at",
                     default=30, type=int)
 parser.add_argument("--char", help="The character to play as",
                     default="Batman", type=str)
-parser.add_argument("--npc", help="The character to play as",
-                    default="Scuttlefish", type=str)
 parser.add_argument("--port", help="The ip address on which the connections will be made. "
                                       "For server, use the localhost, for the client use the public ip of the server.",
                     default=33012, type=int)
+parser.add_argument("-m", "--magnification", help="The level of magnifcation to use for rendering the game",
+                    default=1.5, type=int)
+
 
 def main():
 
@@ -46,11 +48,8 @@ def main():
         map_name="test_map_new_format",
         player_character_name=args.char,
         player_start_pos=(20 + 32 if args.server else 64, 80),
-        npc_names=[args.npc],
-        npc_start_positions=[(20 + 64 if args.server else 32, 80)],
         window_size=(800, 400),
-        player_state_queue=[Queue()],
-        npc_state_queues=[Queue()],
+        magnification=args.magnification,
         server=args.server,
         host=args.host_ip,
         port=args.port,
@@ -97,6 +96,7 @@ def main():
     # while not kill_signal.is_set():
     #     print("Tick", kill_signal.is_set())
     #     time.sleep(1)
+
 
 if __name__=="__main__":
     main()
